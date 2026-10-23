@@ -1,0 +1,24 @@
+Quileg HID — Proprietary Software License
+Copyright (c) 2026 JIANG HUI. All rights reserved.
+
+The compiled Quileg HID application and its installer (the "Software") are made
+available free of charge for personal and commercial use. You may download,
+install and run the Software.
+
+The source code of the Software is proprietary and is not licensed or provided
+under this license. You may not modify, decompile, reverse engineer, or create
+derivative works of the Software, except to the extent permitted by applicable law.
+
+You may redistribute the unmodified installer, provided this license and the
+third-party notices (THIRD-PARTY-NOTICES.md and the licenses/ directory) are
+included unchanged.
+
+The Software is provided "AS IS", without warranty of any kind, express or implied,
+including but not limited to the warranties of merchantability, fitness for a
+particular purpose and noninfringement. In no event shall the authors be liable
+for any claim, damages or other liability arising from the use of the Software.
+
+Third-party components are licensed under their own terms:
+- esp32-iphone-agent (MIT)
+- UxPlay (GPL-3.0)
+See THIRD-PARTY-NOTICES.md for details.
