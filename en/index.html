@@ -118,18 +118,19 @@
   <div class="wrap">
     <div class="section-head">
       <h2>How the AI drives it</h2>
-      <p>No scripting, no coordinate math. The app runs a local MCP server; your AI assistant connects to it to see the screen, tap buttons and type. You talk, it acts.</p>
+      <p>No scripting, no coordinate math. Hand the DMG to your AI: it installs the app, reads the bundled documents, wires up the connection — then it can see the screen, tap buttons and type. You talk, it taps.</p>
     </div>
 
     <div class="two-col top">
       <div>
         <h3>Three steps to start</h3>
         <ol class="start-steps">
-          <li>Open the app, then Control Center → Screen Mirroring → this Mac</li>
-          <li>Add the MCP server to your AI host and restart it</li>
+          <li>Hand the DMG to your AI — or drag it to Applications yourself</li>
+          <li>Let it read <code>START-HERE.md</code> from the image</li>
           <li>Say the first sentence: <b>"Is the phone connected?"</b></li>
         </ol>
-        <p class="mini">Works with any MCP host: Claude Desktop, Cursor, DSH. Host config is in the <a href="../docs/mcp.html">setup guide</a>. The service binds to <code>127.0.0.1:8890</code> only — never expose it.</p>
+        <p class="mini">An AI with local file access (Claude Code, Cursor, DSH) can mount the DMG, install the app, verify the signature and version, read all 7 documents and wire up the connection — you only approve the key steps.</p>
+        <p class="mini">A chat-only AI (Claude Desktop) cannot read local files, so install once yourself; after that it drives the phone over MCP. The service binds to <code>127.0.0.1:8890</code> only — never expose it. <a href="../docs/">Read the docs online →</a></p>
       </div>
 
       <div class="chat">

@@ -116,18 +116,19 @@
   <div class="wrap">
     <div class="section-head">
       <h2>AI 怎么控制它</h2>
-      <p>不用写脚本，也不用算坐标。App 在本机开一个 MCP 服务，你的 AI 助手接上之后就能看屏幕、点按钮、打字——你说人话，它动手。</p>
+      <p>不用写脚本，也不用算坐标。把 DMG 交给 AI：它自己装好、读包里的文档、配好接入，然后就能看屏幕、点按钮、打字。你说人话，它动手。</p>
     </div>
 
     <div class="two-col top">
       <div>
         <h3>三步开始</h3>
         <ol class="start-steps">
-          <li>打开 App，手机控制中心 →「屏幕镜像」→ 选这台 Mac</li>
-          <li>在 AI 宿主里添加 MCP 服务器，重启宿主</li>
+          <li>把 DMG 交给 AI；也可以自己拖进「应用程序」</li>
+          <li>让它读包里的 <code>START-HERE.md</code></li>
           <li>对 AI 说第一句话：<b>「手机连好了吗？」</b></li>
         </ol>
-        <p class="mini">Claude Desktop、Cursor、DSH 等任何 MCP 宿主都能用，宿主配置见<a href="docs/mcp.html">接入文档</a>。服务只监听本机 <code>127.0.0.1:8890</code>，不要暴露到公网。</p>
+        <p class="mini">有本机文件权限的 AI（Claude Code、Cursor、DSH 等）可以自己挂载 DMG、装进「应用程序」、核对签名与版本、读完包里 7 份文档，再按文档配好接入——你只需要在关键步骤点确认。</p>
+        <p class="mini">只能聊天的 AI（如 Claude Desktop）读不到本地文件，需要你先手动装一次；装完它就能通过 MCP 操作手机。服务只监听本机 <code>127.0.0.1:8890</code>，不要暴露到公网。<a href="docs/">在网页上看这些文档 →</a></p>
       </div>
 
       <div class="chat">
