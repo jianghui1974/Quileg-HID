@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>运行方式：常驻与退出 — Quileg HID 文档</title>
+<meta name="description" content="关窗为什么不退出、自启动怎么工作、什么算「忙」。">
+<meta name="theme-color" content="#fff8ee">
+<link rel="icon" href="../assets/icon-1024.png">
+<link rel="stylesheet" href="../styles.css">
+</head>
+<body class="doc-page">
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="../"><img src="../assets/icon-1024.png" alt="">Quileg HID</a>
+    <nav>
+      <a href="../">首页</a>
+      <a href="index.html">文档</a>
+      <a href="../#start">下载</a>
+      <a class="lang" href="../en/">English</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap doc-layout">
+  <aside class="doc-nav">
+    <div class="doc-nav-title">文档</div>
+    <a href="index.html">全部</a>
+    <a href="install.html">安装与首次使用</a>
+    <a href="features.html">功能与设置</a>
+    <a href="mcp.html">接入 AI（MCP）</a>
+    <a href="ai-guide.html">给 AI 的操作手册</a>
+    <a href="troubleshooting.html">排障与兼容性</a>
+    <a href="lifecycle.html" class="on">运行方式</a>
+    <a href="licenses.html">第三方声明</a>
+  </aside>
+
+  <article class="prose">
+    <p class="doc-kicker">文档 · 随安装包分发</p>
+    <h1>运行方式：常驻与退出</h1>
+    <p class="doc-lead">关窗为什么不退出、自启动怎么工作、什么算「忙」。</p>
+<blockquote><p>适用：Quileg HID 0.5.0+。相关：<code>app/README.md</code>（界面，源码仓库）、MCP 接入说明（MCP-SETUP.md）</p></blockquote>
+<p>App 同时是<strong>设备控制台</strong>和<strong>AI 的 MCP 接口</strong>，所以窗口只是它的一部分。这里定义 「窗口 / 进程 / 服务」的关系，以及关窗、退出、登录启动的行为。</p>
+<h2>1. 三层模型</h2>
+<div class="table-wrap"><table class="doc-table"><thead><tr><th>层</th><th>内容</th><th>关窗</th><th>退出</th></tr></thead><tbody><tr><td>服务</td><td>hidagent <code>:8890</code>、UxPlay、板子 TCP <code>7300</code>、MCP</td><td>不动</td><td>停</td></tr><tr><td>窗口</td><td>镜像、设备、日志</td><td>隐藏</td><td>关</td></tr><tr><td>入口</td><td>GUI、<code>HIDBridge --mcp</code>（宿主拉起）</td><td>不受影响</td><td><code>--mcp</code> 独立进程</td></tr></tbody></table></div>
+<p>结论：<strong>关窗 ≠ 退出</strong>。默认点红叉只是把窗口收起来，服务继续跑。</p>
+<h2>2. 设置项与默认值</h2>
+<p><code>⌘,</code> → 运行方式：</p>
+<div class="table-wrap"><table class="doc-table"><thead><tr><th>设置</th><th>选项</th><th>默认</th><th>生效</th></tr></thead><tbody><tr><td>开机时自动启动</td><td>开 / 关</td><td><strong>关</strong></td><td>保存时写/删 LaunchAgent</td></tr><tr><td>启动时</td><td>显示窗口 / 仅后台启动</td><td><strong>显示窗口</strong></td><td>下次启动</td></tr><tr><td>关闭窗口时</td><td>留在后台（Dock）/ 每次询问 / 直接退出</td><td><strong>留在后台</strong></td><td>立即</td></tr><tr><td>退出确认</td><td>仅在忙时 / 总是 / 从不</td><td><strong>仅在忙时</strong></td><td>立即</td></tr></tbody></table></div>
+<blockquote><p>首次隐藏会弹一次说明「仍在后台运行」，之后不再弹（<code>hide_hint_shown</code>）。</p></blockquote>
+<h2>3. 行为矩阵</h2>
+<div class="table-wrap"><table class="doc-table"><thead><tr><th>操作</th><th>空闲</th><th>忙</th><th>刷固件</th></tr></thead><tbody><tr><td>红叉</td><td>隐藏窗口</td><td>隐藏窗口（不打断）</td><td>拒绝</td></tr><tr><td><code>⌘Q</code> / 文件→退出</td><td>直接退出</td><td>弹确认，列出原因</td><td>拒绝</td></tr><tr><td>点 Dock 图标</td><td>恢复窗口</td><td>恢复窗口</td><td>—</td></tr><tr><td>登录启动</td><td>不显示窗口（<code>--background</code>）</td><td>—</td><td>—</td></tr><tr><td>第二次启动</td><td>唤醒已有实例后退出</td><td>同左</td><td>—</td></tr></tbody></table></div>
+<p>退出确认文案会列原因，例如：</p>
+<pre><code>退出 Quileg HID？
+现在退出会打断：
+· 板子已连接
+· AI 最近 12 秒有操作
+
+退出后会停止 MCP 接口、投屏和板子连接。
+[继续运行]  [仍然退出]</code></pre>
+<h2>4. 什么算「忙」</h2>
+<p><code>core/lifecycle.py: busy_reasons()</code>：</p>
+<ul><li>板子已连接（<code>/api/status</code> 的 <code>device</code>）</li><li>正在投屏（<code>screen</code>）</li><li>iPhone 键鼠已连接（<code>ble.connected=1</code>）</li><li>AI 任务在跑（<code>agent.running</code>）</li><li><strong>最近 90 秒有动作类 API 调用</strong>（<code>last_action_age</code>，服务端只统计 <code>POST /api/*</code>， 不把 GUI 自己的 <code>GET /api/status</code>、<code>/api/frame.jpg</code> 轮询算进去）</li><li>操作队列有正在执行/排队</li><li>校准或设备初始化窗口开着</li></ul>
+<p>刷固件是硬阻塞：<code>_flashing</code> 时红叉和 <code>⌘Q</code> 都直接拒绝。</p>
+<h2>5. 开机自启动</h2>
+<ul><li>写入 <code>~/Library/LaunchAgents/com.huijiang.hidbridge.plist</code>： <code>ProgramArguments = [&lt;App 可执行文件&gt;, --background]</code>、<code>RunAtLoad=true</code>、<code>KeepAlive=false</code>；</li><li><code>launchctl bootstrap gui/$UID</code> / <code>bootout</code> 生效；</li><li><strong>仅安装版可用</strong>（源码运行没有稳定可执行路径，复选框会禁用）；</li><li>移动 App 后重新开一次设置保存即可重写路径；关闭开关会删 plist。</li></ul>
+<h2>6. 单实例</h2>
+<ul><li>GUI 启动时对 <code>~/Library/Application Support/HIDBridge/gui.lock</code> 加 <code>flock</code>；</li><li>拿不到锁 → 认为是第二次启动：<code>open</code> 已有 App（触发 <code>tk::mac::ReopenApplication</code> 显示窗口）后退出；</li><li>锁随进程退出自动释放，不需要清理；</li><li><code>HIDBridge --mcp</code> 不走这把锁，允许多个 MCP 宿主各自拉起。</li></ul>
+<h2>7. 还没做（P2）</h2>
+<p>菜单栏常驻（NSStatusItem、无 Dock 图标）需要 PyObjC/Swift 桥和额外的签名/公证回归， 当前先用 Dock 图标；需要时再加「显示窗口 / 设备状态 / 退出」菜单。</p>
+<h2>8. 验收</h2>
+<ul><li>[ ] 红叉 → 窗口消失、Dock 图标在、<code>:8890</code> 仍可访问；点 Dock 恢复</li><li>[ ] 空闲 <code>⌘Q</code> → 直接退出，<code>8890/7300</code> 释放</li><li>[ ] 板子连接时 <code>⌘Q</code> → 弹确认，取消后窗口还在、服务没断</li><li>[ ] 刷固件时红叉/<code>⌘Q</code> → 拒绝</li><li>[ ] 开自启动 → 重启后后台起服务、不弹窗口；关闭后 plist 消失</li><li>[ ] 连点两次启动 → 只有一个进程</li></ul>
+    <p class="doc-source">本页内容与安装包内文档同源，版本见 VERSION.txt。未在页面上展示的细节，可在
+    <a href="https://github.com/jianghui1974/Quileg-HID/releases">Releases</a> 页下载的 DMG 中找到完整原文。</p>
+  </article>
+</div>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="legal">© <span id="year">2026</span> Quileg. Quileg HID 为闭源软件，免费提供下载与使用。</p>
+  </div>
+</footer>
+<script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+</body>
+</html>

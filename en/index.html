@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quileg HID — Let AI actually use your iPhone</title>
+<meta name="description" content="Quileg HID is a macOS app that lets an AI assistant see your iPhone screen over AirPlay and act through a real Bluetooth keyboard and mouse. No jailbreak, no app on the phone, no developer mode.">
+<meta name="theme-color" content="#fff8ee">
+<link rel="icon" href="../assets/icon-1024.png">
+<link rel="apple-touch-icon" href="../assets/icon-1024.png">
+<link rel="stylesheet" href="../styles.css">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Quileg HID — Let AI actually use your iPhone">
+<meta property="og:description" content="AirPlay for sight, a Bluetooth keyboard and mouse for touch. No jailbreak required.">
+<meta property="og:image" content="../assets/icon-1024.png">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="../">
+      <img src="../assets/icon-1024.png" alt="Quileg HID icon">
+      Quileg HID
+    </a>
+    <nav>
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#start">Get started</a>
+      <a href="#docs">Docs</a>
+      <a href="#faq">FAQ</a>
+      <a class="lang" href="../">中文</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<div class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <h1>Let AI <em>actually</em> use your iPhone</h1>
+      <p class="lede">
+        Quileg HID gives your AI assistant eyes on the screen and hands on the interface —
+        using your phone the way a person does, not through an API.
+      </p>
+      <div class="btn-row">
+        <a class="btn btn-primary" id="download-btn" href="https://github.com/jianghui1974/Quileg-HID/releases/latest">
+          <span aria-hidden="true">↓</span> <span id="download-label">Download for macOS</span>
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/jianghui1974/Quileg-HID">GitHub</a>
+      </div>
+      <div class="meta-line">
+        <span id="version-line">Free</span>
+        <span>macOS 13.0+</span>
+        <span>Apple Silicon</span>
+        <span>Notarized</span>
+      </div>
+    </div>
+    <img class="hero-icon" src="../assets/icon-1024.png" alt="Quileg HID app icon">
+  </div>
+</div>
+
+<div class="wrap">
+  <p class="notice">
+    <strong>Before you start:</strong> Quileg HID needs an <strong>ESP32-S3 development board</strong>
+    (around US$4–9, 16MB flash required). Verified working: Seeed XIAO ESP32S3 Plus,
+    and third-party boards built on the ESP32-S3-WROOM-1-N16R8 module.
+    The board impersonates a Bluetooth keyboard and mouse and does the actual tapping.
+    Without it, the app cannot control a phone.
+  </p>
+</div>
+
+<section id="how">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>How it works</h2>
+      <p>Three parts doing three simple jobs.</p>
+    </div>
+    <figure class="diagram">
+      <img src="../assets/diagram.svg" width="1200" height="500" loading="lazy"
+           alt="The iPhone mirrors its screen to the Mac over AirPlay; the Mac commands the ESP32-S3 board over Wi-Fi; the board operates the iPhone as a Bluetooth keyboard and mouse">
+      <figcaption>
+        <span><b>①</b> AirPlay — the AI sees the screen</span>
+        <span><b>②</b> Wi-Fi — the Mac commands the board</span>
+        <span><b>③</b> BLE HID — the board taps the phone</span>
+      </figcaption>
+    </figure>
+    <div class="steps">
+      <div class="step">
+        <span class="num">1</span>
+        <h3>See</h3>
+        <p>Mirror the iPhone to your Mac with the built-in Screen Mirroring. The app turns frames into images the model can reason about.</p>
+      </div>
+      <div class="step">
+        <span class="num">2</span>
+        <h3>Act</h3>
+        <p>The ESP32-S3 pairs as a standard Bluetooth keyboard and mouse, and performs the taps and keystrokes the Mac sends it.</p>
+      </div>
+      <div class="step">
+        <span class="num">3</span>
+        <h3>Orchestrate</h3>
+        <p>A local control service exposes the device to your AI over MCP: look, tap, look again. Every action is verified.</p>
+      </div>
+    </div>
+
+    <div class="showcase">
+      <div class="showcase-head">
+        <h3>Console</h3>
+        <div class="shot-switch" role="group" aria-label="Appearance">
+          <button type="button" class="on" data-shot="light">Light</button>
+          <button type="button" data-shot="dark">Dark</button>
+        </div>
+      </div>
+      <img id="shot-img" src="../assets/app-light.jpg" width="1800" height="1207" loading="lazy"
+           alt="Quileg HID console (light): the live iPhone screen on the left, mouse and keypad controls on the right">
+      <p class="showcase-note">The live phone screen on the left, control and device panels on the right</p>
+    </div>
+  </div>
+</section>
+
+<section id="features" class="alt">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>What you can do</h2>
+      <p>Anything you could do by hand on the screen, the assistant can do too.</p>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <span class="ico" aria-hidden="true">👆</span>
+        <h3>Apps without APIs</h3>
+        <p>If it can be tapped, it can be automated — no SDK, no partner access, no reverse engineering.</p>
+      </div>
+      <div class="card">
+        <span class="ico" aria-hidden="true">🔁</span>
+        <h3>Repetitive work</h3>
+        <p>Describe the routine once, then let it run: tapping, filling, paging, copying.</p>
+      </div>
+      <div class="card">
+        <span class="ico" aria-hidden="true">👀</span>
+        <h3>Verified at every step</h3>
+        <p>Each action is followed by a fresh screenshot, so a missed tap is caught instead of compounding.</p>
+      </div>
+      <div class="card">
+        <span class="ico" aria-hidden="true">⌨️</span>
+        <h3>Full keyboard control</h3>
+        <p>Letters, symbols, function keys and modifier combinations, with CJK input via pinyin and candidate taps.</p>
+      </div>
+      <div class="card">
+        <span class="ico" aria-hidden="true">🖥️</span>
+        <h3>Not just iPhone</h3>
+        <p>iOS and iPadOS go over AirPlay. Android, Windows and macOS need a UVC capture card. Key policy follows the target platform.</p>
+      </div>
+      <div class="card">
+        <span class="ico" aria-hidden="true">🔒</span>
+        <h3>Local by design</h3>
+        <p>The control service binds to <code>127.0.0.1:8890</code>. Screen data never leaves your Mac.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LINEAGE ============ -->
+<section id="lineage">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Three generations</h2>
+      <p>One idea throughout: make a device act as a standard keyboard and mouse. The first two generations were built on <strong>STM32</strong> as wired devices plugged into a computer; the third moved to the <strong>ESP32-S3</strong> and Bluetooth, and to a phone. Neither of the first two was released publicly.</p>
+    </div>
+    <ol class="gen">
+      <li class="gen-item past">
+        <span class="gen-badge">First</span>
+        <span class="gen-date">July 2024</span>
+        <h3>Quileg programmable HID simulator</h3>
+        <p>A standalone STM32 device that runs your scripted routines as a keyboard and mouse. Built in several enclosure colours (photo below). Never released; <a href="https://www.godar.cn/en/products/quileg/" target="_blank" rel="noopener">project page</a></p>
+      </li>
+      <li class="gen-item past">
+        <span class="gen-badge">Second</span>
+        <span class="gen-date">July 2025</span>
+        <h3>Multi-device chaining</h3>
+        <p>Still STM32, but now several units can be <strong>chained or run in parallel</strong>. Never released.</p>
+      </li>
+      <li class="gen-item current">
+        <span class="gen-badge">Third · current</span>
+        <span class="gen-date">2026 – present</span>
+        <h3>Quileg HID</h3>
+        <p>Switched to the ESP32-S3 and Bluetooth, so no cable is needed. The target moved from a computer to a phone: mirror the screen, act with keyboard and mouse, let an AI drive the iPhone.</p>
+      </li>
+    </ol>
+
+    <figure class="gen-photo">
+      <img src="../assets/generation-1.webp" width="1280" height="719" loading="lazy"
+           alt="First-generation Quileg device: yellow, white and blue enclosures with an OLED display and buttons">
+      <figcaption>First generation · STM32 device, three enclosure versions (photo)</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="start">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Get started</h2>
+      <p>About 30–40 minutes from unboxing to first tap — around 13 of those are the one-time calibration. After that it only needs redoing if the phone, resolution, pointer size, video source or orientation changes.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <span class="num">1</span>
+        <h3>Get a board</h3>
+        <p>Any ESP32-S3 with 16MB flash. If it has an external antenna connector, <strong>connect the antenna</strong> — Wi-Fi is unusable without it.</p>
+      </div>
+      <div class="step">
+        <span class="num">2</span>
+        <h3>Install and flash</h3>
+        <p>Download the DMG, drag the app into Applications, connect the board over USB and flash the firmware from inside the app.</p>
+      </div>
+      <div class="step">
+        <span class="num">3</span>
+        <h3>Mirror, calibrate, go</h3>
+        <p>Open Control Center → Screen Mirroring → choose your Mac. On the iPhone, turn on <strong>AssistiveTouch</strong> (Settings → Accessibility → Touch) and make sure <strong>Pointer Devices → Mouse Keys → Use Primary Keyboard</strong> is off. Then run the calibration once in the app.</p>
+      </div>
+    </div>
+
+    <h3 style="margin:44px 0 16px;color:var(--navy)">Requirements</h3>
+    <table class="spec">
+      <tr><th>macOS</th><td>13.0 (Ventura) or later</td></tr>
+      <tr><th>Processor</th><td>Apple Silicon (M-series). <strong>Intel Macs are not supported</strong></td></tr>
+      <tr><th>Hardware</th><td>ESP32-S3 dev board, 16MB flash. Verified: Seeed XIAO ESP32S3 Plus; third-party boards with the ESP32-S3-WROOM-1-N16R8 module (some batches ship XMC flash — test before relying on it)</td></tr>
+      <tr><th>Network</th><td>Mac and board on the same 2.4GHz LAN</td></tr>
+      <tr><th>Target devices</th><td>iPhone / iPad (Screen Mirroring); Android / Windows / macOS (requires a UVC capture card)</td></tr>
+      <tr><th>Price</th><td>Free</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="advanced" class="alt">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Technical notes</h2>
+    </div>
+
+    <details>
+      <summary>Local control API and MCP</summary>
+      <div class="body">
+        <p>The app serves HTTP on <code>8890</code>; the GUI, the control layer and MCP share it.</p>
+        <pre><code>curl -s http://127.0.0.1:8890/api/status</code></pre>
+        <p>32 MCP tools cover status, screenshots, taps, typing, scrolling, dragging, key presses, calibration and speech.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Why calibration takes 13 minutes</summary>
+      <div class="body">
+        <p>A Bluetooth mouse sends relative motion, but an assistant needs to hit a specific button. Calibration records the four corner stops, a per-axis mapping table for each corner, the end-to-end latency and a verification pass, and saves a profile keyed by <code>source:resolution</code> (e.g. <code>airplay:500x1080</code>). It only needs repeating when the <strong>phone, mirroring resolution, pointer size, video source (AirPlay ↔ UVC) or orientation</strong> changes — <strong>not</strong> when the board changes. AirPlay and UVC each need their own calibration.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Third-party components</summary>
+      <div class="body">
+        <ul>
+          <li><a href="https://github.com/onehumanbeing/esp32-iphone-agent" target="_blank" rel="noopener"><strong>esp32-iphone-agent</strong></a> (MIT) — board-side control service</li>
+          <li><a href="https://github.com/FDH2/UxPlay" target="_blank" rel="noopener"><strong>UxPlay</strong></a> (GPL-3.0) — AirPlay receiver</li>
+        </ul>
+        <p>The app itself is closed source. Corresponding source for the GPL-3.0 components is published with every release.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Code signing and verification</summary>
+      <div class="body">
+        <p>Every build is signed with a Developer ID certificate, notarized by Apple, and the notarization ticket is stapled into the bundle, so the first launch works offline.</p>
+        <pre><code>shasum -a 256 Quileg-HID-&lt;version&gt;.dmg</code></pre>
+        <p>Compare against the SHA-256 published on the releases page.</p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>FAQ</h2>
+    </div>
+
+    <details>
+      <summary>Why is the board required?</summary>
+      <div class="body">
+        <p>iOS gives no software the ability to synthesize touch input. The only way in is real Bluetooth HID events from an external device — which is exactly what the ESP32-S3 does. That is also why no jailbreak and no app install are needed.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Can this get my account banned?</summary>
+      <div class="body">
+        <p>From the device's point of view the input is indistinguishable from a human using a keyboard and mouse. Still, only use this on devices and accounts you are authorized to operate, and follow each platform's terms of service.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Intel Mac support?</summary>
+      <div class="body">
+        <p>Not currently. Only Apple Silicon builds are published.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Do I install anything on the phone?</summary>
+      <div class="body">
+        <p>No. No app, no developer mode, no jailbreak — just the built-in Screen Mirroring.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Is my screen uploaded anywhere?</summary>
+      <div class="body">
+        <p>No. Mirroring, frame processing and control all happen locally, and the service binds to <code>127.0.0.1</code>. Whether screenshots reach an AI model depends on the AI tool you choose.</p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ============ DOCS ============ -->
+<section id="docs" class="alt">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Documentation</h2>
+      <p>Shipped inside the installer and kept in sync with every release. Written in Chinese for now.</p>
+    </div>
+    <div class="cards">
+      <a class="card doc-card" href="../docs/install.html">
+        <h3>Install &amp; first run <span class="doc-tag">中文</span></h3>
+        <p>Drag to Applications, flash the board, mirror the phone, calibrate once.</p>
+      </a>
+      <a class="card doc-card" href="../docs/features.html">
+        <h3>Features &amp; settings <span class="doc-tag">中文</span></h3>
+        <p>Where every panel and switch lives, and what to check first.</p>
+      </a>
+      <a class="card doc-card" href="../docs/mcp.html">
+        <h3>Connect an AI (MCP) <span class="doc-tag">中文</span></h3>
+        <p>Expose 32 tools to Claude, Codex and other MCP hosts.</p>
+      </a>
+      <a class="card doc-card" href="../docs/troubleshooting.html">
+        <h3>Troubleshooting <span class="doc-tag">中文</span></h3>
+        <p>Pitfalls we actually hit, the device compatibility matrix, known issues.</p>
+      </a>
+    </div>
+    <p style="margin-top:22px"><a href="../docs/">All documentation →</a></p>
+  </div>
+</section>
+
+<section class="cta-section">
+  <div class="wrap">
+    <div class="cta">
+      <h2>Let the assistant tap for you</h2>
+      <p>Free to download. No account required. All you need is an ESP32-S3.</p>
+      <div class="btn-row" style="justify-content:center">
+        <a class="btn btn-primary" id="download-btn-2" href="https://github.com/jianghui1974/Quileg-HID/releases/latest">Download for macOS</a>
+        <a class="btn btn-ghost" href="#start">See setup steps</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <div class="brand" style="margin-bottom:10px">
+          <img src="../assets/icon-1024.png" alt="">
+          Quileg HID
+        </div>
+        <div>Let AI actually use your iPhone.</div>
+
+        <div class="foot-about">
+          <p class="foot-about-lead">JIANG HUI · independent developer</p>
+          <p>Quileg has been built from the first generation in 2024 to the current one. More work at
+            <a href="https://www.godar.cn/en/" target="_blank" rel="noopener">godar.cn</a>.</p>
+          <p>Questions, feedback or collaboration: <a href="mailto:contact@airdiode.com">contact@airdiode.com</a></p>
+        </div>
+      </div>
+      <nav>
+        <a href="#how">How it works</a>
+        <a href="#start">Get started</a>
+        <a href="https://github.com/jianghui1974/Quileg-HID/releases">Changelog</a>
+        <a href="https://github.com/jianghui1974/Quileg-HID/issues">Report an issue</a>
+      </nav>
+      <nav>
+        <a href="#advanced">Technical notes</a>
+        <a href="#lineage">Generations</a>
+        <a href="../docs/">Documentation</a>
+        <a href="../docs/licenses.html">Licenses</a>
+        <a href="https://www.godar.cn/en/" target="_blank" rel="noopener">Author site</a>
+        <a href="#faq">FAQ</a>
+        <a href="../">中文</a>
+      </nav>
+    </div>
+    <p class="legal">
+      © <span id="year">2026</span> Quileg. All rights reserved. Quileg HID is closed-source software, free to download and use.<br>
+      Use it only on devices and accounts you are authorized to operate, and in compliance with the relevant platform terms. Provided "as is", without warranty of any kind.<br>
+      Third-party components: <a href="https://github.com/onehumanbeing/esp32-iphone-agent" target="_blank" rel="noopener">esp32-iphone-agent</a> (MIT), <a href="https://github.com/FDH2/UxPlay" target="_blank" rel="noopener">UxPlay</a> (GPL-3.0). Full license texts ship with the installer.
+    </p>
+  </div>
+</footer>
+
+<script>
+// Screenshot: light / dark switch
+(function () {
+  var img = document.getElementById("shot-img");
+  var btns = document.querySelectorAll(".shot-switch button");
+  if (!img || !btns.length) return;
+
+  Array.prototype.forEach.call(btns, function (btn) {
+    btn.addEventListener("click", function () {
+      Array.prototype.forEach.call(btns, function (b) { b.classList.remove("on"); });
+      btn.classList.add("on");
+      var theme = btn.getAttribute("data-shot");
+      img.src = "../assets/app-" + theme + ".jpg";
+      img.alt = "Quileg HID console (" + theme +
+                "): the live iPhone screen on the left, mouse and keypad controls on the right";
+    });
+  });
+})();
+</script>
+
+<script>
+(function () {
+  var REPO = "jianghui1974/Quileg-HID";
+  var btns = [document.getElementById("download-btn"), document.getElementById("download-btn-2")];
+  var label = document.getElementById("download-label");
+  var vline = document.getElementById("version-line");
+
+  document.getElementById("year").textContent = new Date().getFullYear();
+
+  function pending() {
+    btns.forEach(function (b) {
+      if (!b) return;
+      b.setAttribute("aria-disabled", "true");
+      b.setAttribute("href", "#");
+      if (b.id === "download-btn-2") b.textContent = "Coming soon";
+    });
+    if (label) label.textContent = "Coming soon";
+    if (vline) vline.textContent = "Free · Coming soon";
+  }
+
+  if (!window.fetch) return pending();
+
+  fetch("https://api.github.com/repos/" + REPO + "/releases/latest", {
+    headers: { Accept: "application/vnd.github+json" }
+  })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (rel) {
+      if (!rel || !rel.tag_name) return pending();
+      var v = rel.tag_name.replace(/^v/, "");
+      if (label) label.textContent = "Download for macOS (" + v + ")";
+      if (vline) vline.textContent = "v" + v + " · Free";
+    })
+    .catch(pending);
+})();
+</script>
+
+</body>
+</html>

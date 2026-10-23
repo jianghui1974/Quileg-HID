@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>文档 — Quileg HID</title>
+<meta name="description" content="Quileg HID 文档：安装、功能、MCP 接入、排障与许可说明。">
+<meta name="theme-color" content="#fff8ee">
+<link rel="icon" href="../assets/icon-1024.png">
+<link rel="stylesheet" href="../styles.css">
+</head>
+<body class="doc-page">
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="../"><img src="../assets/icon-1024.png" alt="">Quileg HID</a>
+    <nav>
+      <a href="../">首页</a>
+      <a href="index.html">文档</a>
+      <a href="../#start">下载</a>
+      <a class="lang" href="../en/">English</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section style="padding-top:56px">
+    <div class="section-head">
+      <h2>文档</h2>
+      <p>与安装包内文档同源。第一次用建议按顺序读前三篇。</p>
+    </div>
+    <div class="cards">
+      <a class="card doc-card" href="install.html"><h3>安装与首次使用</h3><p>从拿到安装包到手机能被操作，按这个顺序走一遍。</p></a>
+      <a class="card doc-card" href="features.html"><h3>功能与设置</h3><p>App 能做什么、每个开关在哪、出问题先看什么。</p></a>
+      <a class="card doc-card" href="mcp.html"><h3>接入 AI（MCP）</h3><p>让 Claude、Codex 等 AI 宿主真正调用这个 App。</p></a>
+      <a class="card doc-card" href="ai-guide.html"><h3>给 AI 的操作手册</h3><p>工具语义、坐标校准、任务配方与安全边界。</p></a>
+      <a class="card doc-card" href="troubleshooting.html"><h3>排障与兼容性</h3><p>真实踩过的坑、设备兼容矩阵、已知问题。</p></a>
+      <a class="card doc-card" href="lifecycle.html"><h3>运行方式：常驻与退出</h3><p>关窗为什么不退出、自启动怎么工作、什么算「忙」。</p></a>
+      <a class="card doc-card" href="licenses.html"><h3>第三方声明与许可</h3><p>随包分发的开源组件、许可类型与合规说明。</p></a>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="legal">© <span id="year">2026</span> Quileg. Quileg HID 为闭源软件，免费提供下载与使用。</p>
+  </div>
+</footer>
+<script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+</body>
+</html>

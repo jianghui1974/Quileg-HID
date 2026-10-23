@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第三方声明与许可 — Quileg HID 文档</title>
+<meta name="description" content="随包分发的开源组件、许可类型与合规说明。">
+<meta name="theme-color" content="#fff8ee">
+<link rel="icon" href="../assets/icon-1024.png">
+<link rel="stylesheet" href="../styles.css">
+</head>
+<body class="doc-page">
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="../"><img src="../assets/icon-1024.png" alt="">Quileg HID</a>
+    <nav>
+      <a href="../">首页</a>
+      <a href="index.html">文档</a>
+      <a href="../#start">下载</a>
+      <a class="lang" href="../en/">English</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap doc-layout">
+  <aside class="doc-nav">
+    <div class="doc-nav-title">文档</div>
+    <a href="index.html">全部</a>
+    <a href="install.html">安装与首次使用</a>
+    <a href="features.html">功能与设置</a>
+    <a href="mcp.html">接入 AI（MCP）</a>
+    <a href="ai-guide.html">给 AI 的操作手册</a>
+    <a href="troubleshooting.html">排障与兼容性</a>
+    <a href="lifecycle.html">运行方式</a>
+    <a href="licenses.html" class="on">第三方声明</a>
+  </aside>
+
+  <article class="prose">
+    <p class="doc-kicker">文档 · 随安装包分发</p>
+    <h1>第三方声明与许可</h1>
+    <p class="doc-lead">随包分发的开源组件、许可类型与合规说明。</p>
+<blockquote><p><strong>产品</strong>：Quileg HID（Mac 控制端 + ESP32-S3 BLE HID 板子） <strong>最后更新</strong>：2026-10-22 <strong>适用</strong>：0.9.7 及以后的 DMG / App / 源码包 <strong>维护规则</strong>：新增或升级任何第三方组件时，必须同步本文件与 <code>licenses/</code> 目录，否则打包脚本会拒绝出包。</p></blockquote>
+<hr>
+<h2>0. 总览</h2>
+<div class="table-wrap"><table class="doc-table"><thead><tr><th>组件</th><th>许可</th><th>在 Quileg HID 中的角色</th><th>是否修改</th></tr></thead><tbody><tr><td><a href="https://github.com/onehumanbeing/esp32-iphone-agent" target="_blank" rel="noopener">esp32-iphone-agent</a></td><td><strong>MIT</strong></td><td>服务端 <code>hidagent</code> 的基础；固件协议参考</td><td>是（见 §1.2）</td></tr><tr><td><a href="https://github.com/FDH2/UxPlay" target="_blank" rel="noopener">UxPlay</a></td><td><strong>GPL-3.0</strong></td><td>AirPlay 接收器（随 App 分发的独立二进制）</td><td>否</td></tr><tr><td>GStreamer 及其插件</td><td>LGPL-2.1</td><td>UxPlay 的运行时依赖（动态链接的 dylib）</td><td>否</td></tr><tr><td>Python 运行时与依赖</td><td>各自许可（MIT/BSD/Apache-2.0/LGPL）</td><td>App 内置的 Python 解释器与库</td><td>否</td></tr></tbody></table></div>
+<p><strong>边界说明</strong>：Quileg HID 的桌面控制端（<code>app/</code>）、校准与指针系统（<code>control/</code>）、板子固件（<code>firmware/</code>）、交互与视觉设计均为 Quileg 自有实现，不在上述任何开源许可的覆盖范围内。</p>
+<hr>
+<h2>1. esp32-iphone-agent（MIT）</h2>
+<h3>1.1 来源</h3>
+<div class="table-wrap"><table class="doc-table"><thead><tr><th>项</th><th>值</th></tr></thead><tbody><tr><td>仓库</td><td><a href="https://github.com/onehumanbeing/esp32-iphone-agent" target="_blank" rel="noopener">https://github.com/onehumanbeing/esp32-iphone-agent</a></td></tr><tr><td>快照提交</td><td><code>1315d5759a66fdaa392ce79ac780ec5fbafd9bac</code>（legacy 分支）</td></tr><tr><td>快照日期</td><td>2026-10-13</td></tr><tr><td>许可</td><td>MIT</td></tr><tr><td>版权</td><td>Copyright (c) 2026 Henry Yuan</td></tr></tbody></table></div>
+<h3>1.2 本项目使用了什么、改了什么</h3>
+<p><strong>复用（保留上游实现，做局部修改）</strong>：</p>
+<ul><li><code>server/hidagent/app.py</code>：FastAPI 路由与应用装配 —— 改为 Quileg 首页、移除上游 Agent 路由、新增视频源/诊断接口（+104/−8）；</li><li><code>server/hidagent/screen.py</code>：AirPlay 取帧 —— 增加多源路由与录屏帧率处理（+42/−6）；</li><li><code>server/hidagent/</code> 下 <code>device.py</code>、<code>phone.py</code>、<code>vision.py</code>、<code>video.py</code>、<code>uvc.py</code>：板子 TCP 协议、指针闭环手势、视觉定位、视频源路由 —— <strong>基本保持上游实现</strong>；</li><li><code>hardware/hid_bridge/</code>：「板子零逻辑 + 行命令」的协议设计被沿用，固件在 <code>firmware/</code> 中重写；</li><li><code>control/pointer_calibrate.py</code>：指针检测算法移植自上游 <code>vision.py</code> 的 <code>pointer()</code>。</li></ul>
+<p><strong>不再使用（0.9.7 起已从运行路径与打包产物中移除）</strong>：</p>
+<ul><li><code>server/hidagent/agent.py</code>（上游 LLM planner/actor）；</li><li><code>server/hidagent/llm.py</code>（OpenAI 兼容客户端）；</li><li><code>server/hidagent/static/</code>（上游网页 UI）。</li></ul>
+<p>这些文件仍保留在源码目录中，以满足 MIT 的完整性要求并便于追溯，但<strong>不参与构建、不随 DMG 分发</strong>。</p>
+<h3>1.3 MIT 许可全文</h3>
+<pre><code>MIT License
+
+Copyright (c) 2026 Henry Yuan
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</code></pre>
+<p>许可全文另存于 <a href="licenses/esp32-iphone-agent-LICENSE.txt"><code>licenses/esp32-iphone-agent-LICENSE.txt</code></a>。</p>
+<hr>
+<h2>2. UxPlay（GPL-3.0）</h2>
+<h3>2.1 来源与版本</h3>
+<div class="table-wrap"><table class="doc-table"><thead><tr><th>项</th><th>值</th></tr></thead><tbody><tr><td>仓库</td><td><a href="https://github.com/FDH2/UxPlay" target="_blank" rel="noopener">https://github.com/FDH2/UxPlay</a></td></tr><tr><td>版本</td><td>UxPlay 1.74（构建于 2026-10，对应上游 <code>master</code>）</td></tr><tr><td>许可</td><td>GNU General Public License v3.0</td></tr></tbody></table></div>
+<h3>2.2 分发形式</h3>
+<ul><li>Quileg HID 以<strong>未经修改的独立可执行文件</strong>形式随 App 分发：<code>Quileg HID.app/Contents/Frameworks/airplay/uxplay</code>；</li><li>Quileg HID 与 UxPlay 通过<strong>进程边界</strong>（命令行参数 + 标准输出管道）交互，两者是独立程序；GPL-3.0 的覆盖范围仅及 UxPlay 本身及其衍生作品，<strong>不延伸到 Quileg HID 的自有代码</strong>；</li><li>随包同时提供 GPL-3.0 全文：<a href="licenses/GPL-3.0.txt"><code>licenses/GPL-3.0.txt</code></a>。</li></ul>
+<h3>2.3 对应源码（GPL-3.0 §6 履约）</h3>
+<p>按 GPL-3.0 的要求，我们向收到本产品的任何人提供 UxPlay 的<strong>对应源码</strong>：</p>
+<ol><li><strong>同一下载页提供源码包</strong>：<code>uxplay-1.74-source.tar.gz</code>（与所分发二进制同版本的完整源码，含构建脚本）；</li><li>或访问上游仓库对应版本：<a href="https://github.com/FDH2/UxPlay" target="_blank" rel="noopener">https://github.com/FDH2/UxPlay</a>；</li><li>若以上方式不可用，可书面请求 <code>quileg@airdiode.com</code>，我们在 <strong>3 年内</strong>免费提供完整源码（可选用物理介质，仅收取成本费）。</li></ol>
+<p>源码包的生成脚本见 <code>packaging/fetch_uxplay_source.sh</code>，发布时与 DMG 放在同一目录。</p>
+<hr>
+<h2>3. GStreamer 及其他随包原生库</h2>
+<p>UxPlay 依赖 GStreamer 及若干插件（LGPL-2.1）。这些库以<strong>未修改的动态库</strong>形式随 App 分发，位于 <code>Quileg HID.app/Contents/Frameworks/airplay/</code>：</p>
+<ul><li>源码可从 <a href="https://gstreamer.freedesktop.org/source/" target="_blank" rel="noopener">https://gstreamer.freedesktop.org/source/</a> 与各插件上游获取；</li><li>LGPL-2.1 允许动态链接使用；如需替换其中任何库，可用同版本 ABI 兼容的构建替换对应 <code>.dylib</code>；</li><li>完整的随包文件清单与版本，直接查看 App 包内的 <code>Contents/Frameworks/airplay/</code>。</li></ul>
+<hr>
+<h2>4. Python 运行时与依赖</h2>
+<p>App 内置 Python 运行时及以下主要依赖（均为未修改的发行版）：</p>
+<div class="table-wrap"><table class="doc-table"><thead><tr><th>包</th><th>许可</th></tr></thead><tbody><tr><td>fastapi / starlette / pydantic / uvicorn</td><td>MIT / BSD-3-Clause</td></tr><tr><td>Pillow</td><td>MIT-CMU</td></tr><tr><td>numpy</td><td>BSD-3-Clause</td></tr><tr><td>mcp / mcp-types</td><td>MIT</td></tr><tr><td>esptool / pyserial</td><td>GPL-2.0（esptool）/ BSD-3-Clause（pyserial）</td></tr><tr><td>websockets / httpx / click</td><td>BSD-3-Clause / MIT</td></tr></tbody></table></div>
+<p>每个包自带的许可全文随包保留在 <code>Contents/Resources/&lt;包名&gt;-&lt;版本&gt;.dist-info/licenses/</code> 下。</p>
+<blockquote><p>esptool 为 GPL-2.0：它以独立 Python 包形式被调用（刷写固件时作为库导入），源码可从 <a href="https://github.com/espressif/esptool" target="_blank" rel="noopener">https://github.com/espressif/esptool</a> 获取；如对外分发，请同时遵守 GPL-2.0 的源码提供义务。</p></blockquote>
+<hr>
+<h2>5. 商标与免责</h2>
+<ul><li>本文件提及的产品名、公司名、商标均归各自所有者所有；</li><li>上述开源项目的作者<strong>未</strong>对 Quileg HID 提供背书、担保或技术支持；</li><li>各组件均按「原样」提供，不附带任何明示或暗示的担保。</li></ul>
+<hr>
+<h2>6. 联系方式</h2>
+<p>开源合规相关事宜：<code>quileg@airdiode.com</code></p>
+    <p class="doc-source">本页内容与安装包内文档同源，版本见 VERSION.txt。未在页面上展示的细节，可在
+    <a href="https://github.com/jianghui1974/Quileg-HID/releases">Releases</a> 页下载的 DMG 中找到完整原文。</p>
+  </article>
+</div>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="legal">© <span id="year">2026</span> Quileg. Quileg HID 为闭源软件，免费提供下载与使用。</p>
+  </div>
+</footer>
+<script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+Quileg HID 0.9.26 (build 81)
+Firmware 0.7.0 (16MB)
+Built: 2026-10-23 13:18
+Docs: START-HERE.md, AI_GUIDE.md, PITFALLS.md, APP_CAPABILITIES.md, LIFECYCLE.md, MCP-SETUP.md
+Licenses: THIRD-PARTY-NOTICES.md, licenses/ (MIT, GPL-3.0)
