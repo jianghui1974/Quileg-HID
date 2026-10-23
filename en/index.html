@@ -126,18 +126,10 @@
         <h3>Three steps to start</h3>
         <ol class="start-steps">
           <li>Open the app, then Control Center → Screen Mirroring → this Mac</li>
-          <li>Add the block below to your AI host's config and restart it</li>
+          <li>Add the MCP server to your AI host and restart it</li>
           <li>Say the first sentence: <b>"Is the phone connected?"</b></li>
         </ol>
-        <pre><code>{
-  "mcpServers": {
-    "iphone": {
-      "command": "/Applications/Quileg HID.app/Contents/MacOS/HIDBridge",
-      "args": ["--mcp"]
-    }
-  }
-}</code></pre>
-        <p class="mini">Works with any MCP host: Claude Desktop, Cursor, DSH. The service binds to <code>127.0.0.1:8890</code> only — never expose it.</p>
+        <p class="mini">Works with any MCP host: Claude Desktop, Cursor, DSH. Host config is in the <a href="../docs/mcp.html">setup guide</a>. The service binds to <code>127.0.0.1:8890</code> only — never expose it.</p>
       </div>
 
       <div class="chat">

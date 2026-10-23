@@ -124,18 +124,10 @@
         <h3>三步开始</h3>
         <ol class="start-steps">
           <li>打开 App，手机控制中心 →「屏幕镜像」→ 选这台 Mac</li>
-          <li>在 AI 宿主的配置里加上下面这段，重启宿主</li>
+          <li>在 AI 宿主里添加 MCP 服务器，重启宿主</li>
           <li>对 AI 说第一句话：<b>「手机连好了吗？」</b></li>
         </ol>
-        <pre><code>{
-  "mcpServers": {
-    "iphone": {
-      "command": "/Applications/Quileg HID.app/Contents/MacOS/HIDBridge",
-      "args": ["--mcp"]
-    }
-  }
-}</code></pre>
-        <p class="mini">Claude Desktop、Cursor、DSH 等任何 MCP 宿主都能用。服务只监听本机 <code>127.0.0.1:8890</code>，不要暴露到公网。</p>
+        <p class="mini">Claude Desktop、Cursor、DSH 等任何 MCP 宿主都能用，宿主配置见<a href="docs/mcp.html">接入文档</a>。服务只监听本机 <code>127.0.0.1:8890</code>，不要暴露到公网。</p>
       </div>
 
       <div class="chat">
