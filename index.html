@@ -125,7 +125,7 @@
         <ol class="start-steps">
           <li>把 DMG 交给 AI；或<a href="https://github.com/jianghui1974/Quileg-HID/releases/latest">下载</a>后自己拖进「应用程序」</li>
           <li>让它读包里的 <code>START-HERE.md</code></li>
-          <li>对 AI 说第一句话：<b>「手机连好了吗？」</b></li>
+          <li>按下面「连上手机」把设备接好，再对 AI 说：<b>「手机连好了吗？」</b></li>
         </ol>
         <p class="mini">有本机文件权限的 AI（Claude Code、Cursor、DSH 等）可以自己挂载 DMG、装进「应用程序」、核对签名与版本、读完包里 7 份文档，再按文档配好接入——你只需要在关键步骤点确认。</p>
         <p class="mini">只能聊天的 AI（如 Claude Desktop）读不到本地文件，需要你先手动装一次；装完它就能通过 MCP 操作手机。服务只监听本机 <code>127.0.0.1:8890</code>，不要暴露到公网。<a href="docs/">在网页上看这些文档 →</a></p>
@@ -145,6 +145,17 @@
 
         <p class="chat-note">每一步都重新看一眼屏幕确认，点偏了能发现，而不是盲点一通。</p>
       </div>
+    </div>
+
+        <div class="connect">
+      <h3>连上手机：这几步只能你自己做</h3>
+      <ol class="connect-list">
+        <li><b>打开「辅助触控」</b><span>iPhone 设置 → 辅助功能 → 触控 → 辅助触控。不开就没有鼠标指针，所有点击都像没反应。</span></li>
+        <li><b>关掉「使用主键盘」</b><span>同一页 → 指针设备 → 鼠标键 → 使用主键盘。开着时键盘会被当成鼠标，部分字符不落屏。</span></li>
+        <li><b>投屏到这台 Mac</b><span>控制中心 →「屏幕镜像」→ 选你的 Mac。</span></li>
+        <li><b>板子上电并配网</b><span>USB 连上 Mac，按 App 引导刷固件、连 Wi-Fi；带外置天线的板子记得插上天线。</span></li>
+      </ol>
+      <p class="connect-note">四步做完，再对 AI 说一句「手机连好了吗？」——它会逐项自检，缺什么直接告诉你。</p>
     </div>
 
     <h3 class="ai-sub">32 个工具，分四类</h3>
