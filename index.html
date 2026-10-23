@@ -135,16 +135,15 @@
         <p class="chat-scene">场景：把一句话记进手机备忘录</p>
 
         <div class="chat-row user"><span class="chat-avatar">你</span><div class="chat-bubble">手机连好了吗？</div></div>
-        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble"><span class="chat-tool">status()</span>服务在线、板子在线、投屏已连接、校准已完成。</div></div>
+        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble">连上了——服务、板子、投屏、校准都正常，可以开始。</div></div>
 
         <div class="chat-row user"><span class="chat-avatar">你</span><div class="chat-bubble">帮我在备忘录里记一条：明天十点项目评审</div></div>
-        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble"><span class="chat-tool">screenshot()</span>还在桌面，先打开备忘录。</div></div>
-        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble"><span class="chat-tool">click_text("备忘录")</span>已打开，点「新建」进入编辑。</div></div>
-        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble"><span class="chat-tool">dictation("start")</span> → <span class="chat-tool">speak("明天十点项目评审")</span> → <span class="chat-tool">dictation("stop")</span>Mac 朗读，手机听写转成文字。</div></div>
-        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble"><span class="chat-tool">screenshot()</span>文字已写入，核对无误。</div></div>
-        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble">已记下：<b>明天十点项目评审</b>。</div></div>
+        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble">好。先看一眼屏幕……还在桌面，正在打开备忘录。</div></div>
+        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble">进入编辑了。中文我念给手机听，让它自己转成文字。</div></div>
+        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble">写好了，核对一遍：<b>明天十点项目评审</b>，没有错字。</div></div>
+        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble">已保存。</div></div>
 
-        <p class="chat-note">每一步都重新截图确认，点偏了能发现，而不是盲点一通。</p>
+        <p class="chat-note">每一步都重新看一眼屏幕确认，点偏了能发现，而不是盲点一通。</p>
       </div>
     </div>
 
@@ -153,22 +152,26 @@
       <div class="card">
         <span class="ico" aria-hidden="true">👀</span>
         <h3>看</h3>
-        <p><code>screenshot</code>、<code>ocr</code>、<code>orientation</code>、<code>click_text</code>——截图、识别文字、判断屏幕方向，返回可直接点击的坐标。</p>
+        <p>截图、识别屏幕文字、判断方向，返回可直接点击的坐标。</p>
+        <p class="card-code">screenshot · ocr · orientation · click_text</p>
       </div>
       <div class="card">
         <span class="ico" aria-hidden="true">👆</span>
         <h3>做</h3>
-        <p><code>click</code>、<code>long_press</code>、<code>drag</code>、<code>scroll</code>、<code>type_text</code>、<code>key</code>——点、长按、拖、翻页、打字、按组合键。</p>
+        <p>点、长按、拖动、翻页、打字、按组合键。</p>
+        <p class="card-code">click · long_press · drag · scroll · type_text · key</p>
       </div>
       <div class="card">
         <span class="ico" aria-hidden="true">🔊</span>
         <h3>说</h3>
-        <p><code>speak</code>、<code>dictation</code>、<code>play_audio</code>——Mac 朗读配合手机听写输入中文，也能播提示音。</p>
+        <p>让 Mac 朗读、让手机听写输入中文，也能播提示音。</p>
+        <p class="card-code">speak · dictation · play_audio</p>
       </div>
       <div class="card">
         <span class="ico" aria-hidden="true">🛠️</span>
         <h3>校准与诊断</h3>
-        <p><code>calibration_request</code>、<code>app_status</code>、<code>app_logs</code>、<code>keymap_check</code>——请求校准、查状态、读日志、查某个快捷键能不能用。</p>
+        <p>请求校准、查状态、读日志、查某个快捷键能不能用。</p>
+        <p class="card-code">calibration_request · app_status · app_logs · keymap_check</p>
       </div>
     </div>
   </div>

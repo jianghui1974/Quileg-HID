@@ -137,16 +137,15 @@
         <p class="chat-scene">Scenario: put one line into the phone's Notes</p>
 
         <div class="chat-row user"><span class="chat-avatar">You</span><div class="chat-bubble">Is the phone connected?</div></div>
-        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble"><span class="chat-tool">status()</span> Service online, board online, mirroring connected, calibrated.</div></div>
+        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble">Connected — service, board, mirroring and calibration all look good.</div></div>
 
         <div class="chat-row user"><span class="chat-avatar">You</span><div class="chat-bubble">Add a note: project review tomorrow at 10</div></div>
-        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble"><span class="chat-tool">screenshot()</span> Still on the home screen — opening Notes.</div></div>
-        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble"><span class="chat-tool">click_text("Notes")</span> Open; tapping "New Note".</div></div>
-        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble"><span class="chat-tool">dictation("start")</span> → <span class="chat-tool">speak("project review tomorrow at ten")</span> → <span class="chat-tool">dictation("stop")</span> Mac speech, phone dictation turns it into text.</div></div>
-        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble"><span class="chat-tool">screenshot()</span> The text is in and looks right.</div></div>
-        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble">Saved: <b>project review tomorrow at ten</b>.</div></div>
+        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble">On it. Looking at the screen first — still on the home screen, opening Notes.</div></div>
+        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble">In the editor now. For text I'll speak it to the phone and let dictation write it.</div></div>
+        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble">Done — checking: <b>project review tomorrow at ten</b>, no typos.</div></div>
+        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble">Saved.</div></div>
 
-        <p class="chat-note">Every step is verified with a fresh screenshot, so a missed tap is caught instead of compounding.</p>
+        <p class="chat-note">Every step is checked against a fresh look at the screen, so a missed tap is caught instead of compounding.</p>
       </div>
     </div>
 
@@ -155,22 +154,26 @@
       <div class="card">
         <span class="ico" aria-hidden="true">👀</span>
         <h3>See</h3>
-        <p><code>screenshot</code>, <code>ocr</code>, <code>orientation</code>, <code>click_text</code> — capture the screen, read text, detect orientation, and get clickable coordinates.</p>
+        <p>Capture the screen, read its text, detect orientation, and get clickable coordinates.</p>
+        <p class="card-code">screenshot · ocr · orientation · click_text</p>
       </div>
       <div class="card">
         <span class="ico" aria-hidden="true">👆</span>
         <h3>Act</h3>
-        <p><code>click</code>, <code>long_press</code>, <code>drag</code>, <code>scroll</code>, <code>type_text</code>, <code>key</code> — tap, hold, drag, page, type, press key combinations.</p>
+        <p>Tap, hold, drag, page, type, and press key combinations.</p>
+        <p class="card-code">click · long_press · drag · scroll · type_text · key</p>
       </div>
       <div class="card">
         <span class="ico" aria-hidden="true">🔊</span>
         <h3>Speak</h3>
-        <p><code>speak</code>, <code>dictation</code>, <code>play_audio</code> — Mac speech plus phone dictation for CJK input, and UI sound effects.</p>
+        <p>Mac speech plus phone dictation for CJK input, and UI sound effects.</p>
+        <p class="card-code">speak · dictation · play_audio</p>
       </div>
       <div class="card">
         <span class="ico" aria-hidden="true">🛠️</span>
         <h3>Calibrate &amp; diagnose</h3>
-        <p><code>calibration_request</code>, <code>app_status</code>, <code>app_logs</code>, <code>keymap_check</code> — request calibration, read state and logs, check whether a shortcut is allowed.</p>
+        <p>Request calibration, read state and logs, check whether a shortcut is allowed.</p>
+        <p class="card-code">calibration_request · app_status · app_logs · keymap_check</p>
       </div>
     </div>
   </div>
