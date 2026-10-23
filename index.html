@@ -24,6 +24,7 @@
     </a>
     <nav>
       <a href="#features">能做什么</a>
+      <a href="#ai">AI 怎么用</a>
       <a href="#how">怎么工作</a>
       <a href="#start">开始使用</a>
       <a href="docs/">文档</a>
@@ -105,6 +106,76 @@
         <span class="ico" aria-hidden="true">🔒</span>
         <h3>全部在本地</h3>
         <p>控制服务只监听本机 <code>127.0.0.1:8890</code>，画面和操作不出你的电脑。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ AI ============ -->
+<section id="ai" class="ai-section">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>AI 怎么控制它</h2>
+      <p>不用写脚本，也不用算坐标。App 在本机开一个 MCP 服务，你的 AI 助手接上之后就能看屏幕、点按钮、打字——你说人话，它动手。</p>
+    </div>
+
+    <div class="two-col top">
+      <div>
+        <h3>三步开始</h3>
+        <ol class="start-steps">
+          <li>打开 App，手机控制中心 →「屏幕镜像」→ 选这台 Mac</li>
+          <li>在 AI 宿主的配置里加上下面这段，重启宿主</li>
+          <li>对 AI 说第一句话：<b>「手机连好了吗？」</b></li>
+        </ol>
+        <pre><code>{
+  "mcpServers": {
+    "iphone": {
+      "command": "/Applications/Quileg HID.app/Contents/MacOS/HIDBridge",
+      "args": ["--mcp"]
+    }
+  }
+}</code></pre>
+        <p class="mini">Claude Desktop、Cursor、DSH 等任何 MCP 宿主都能用。服务只监听本机 <code>127.0.0.1:8890</code>，不要暴露到公网。</p>
+      </div>
+
+      <div class="chat">
+        <p class="chat-scene">场景：把一句话记进手机备忘录</p>
+
+        <div class="chat-row user"><span class="chat-avatar">你</span><div class="chat-bubble">手机连好了吗？</div></div>
+        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble"><span class="chat-tool">status()</span>服务在线、板子在线、投屏已连接、校准已完成。</div></div>
+
+        <div class="chat-row user"><span class="chat-avatar">你</span><div class="chat-bubble">帮我在备忘录里记一条：明天十点项目评审</div></div>
+        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble"><span class="chat-tool">screenshot()</span>还在桌面，先打开备忘录。</div></div>
+        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble"><span class="chat-tool">click_text("备忘录")</span>已打开，点「新建」进入编辑。</div></div>
+        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble"><span class="chat-tool">dictation("start")</span> → <span class="chat-tool">speak("明天十点项目评审")</span> → <span class="chat-tool">dictation("stop")</span>Mac 朗读，手机听写转成文字。</div></div>
+        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble"><span class="chat-tool">screenshot()</span>文字已写入，核对无误。</div></div>
+        <div class="chat-row ai"><span class="chat-avatar">AI</span><div class="chat-bubble">已记下：<b>明天十点项目评审</b>。</div></div>
+
+        <p class="chat-note">每一步都重新截图确认，点偏了能发现，而不是盲点一通。</p>
+      </div>
+    </div>
+
+    <h3 class="ai-sub">32 个工具，分四类</h3>
+    <div class="cards">
+      <div class="card">
+        <span class="ico" aria-hidden="true">👀</span>
+        <h3>看</h3>
+        <p><code>screenshot</code>、<code>ocr</code>、<code>orientation</code>、<code>click_text</code>——截图、识别文字、判断屏幕方向，返回可直接点击的坐标。</p>
+      </div>
+      <div class="card">
+        <span class="ico" aria-hidden="true">👆</span>
+        <h3>做</h3>
+        <p><code>click</code>、<code>long_press</code>、<code>drag</code>、<code>scroll</code>、<code>type_text</code>、<code>key</code>——点、长按、拖、翻页、打字、按组合键。</p>
+      </div>
+      <div class="card">
+        <span class="ico" aria-hidden="true">🔊</span>
+        <h3>说</h3>
+        <p><code>speak</code>、<code>dictation</code>、<code>play_audio</code>——Mac 朗读配合手机听写输入中文，也能播提示音。</p>
+      </div>
+      <div class="card">
+        <span class="ico" aria-hidden="true">🛠️</span>
+        <h3>校准与诊断</h3>
+        <p><code>calibration_request</code>、<code>app_status</code>、<code>app_logs</code>、<code>keymap_check</code>——请求校准、查状态、读日志、查某个快捷键能不能用。</p>
       </div>
     </div>
   </div>
