@@ -9,12 +9,12 @@
 
 ## 最新版本
 
-**0.9.36（Build 91）** · 2026-10-25 · [Release 说明](https://github.com/jianghui1974/Quileg-HID/releases/tag/v0.9.36)
+**0.9.37（Build 92）** · 2026-10-25 · [Release 说明](https://github.com/jianghui1974/Quileg-HID/releases/tag/v0.9.37)
 
 | 安装包 | 适用机器 | SHA-256 |
 |---|---|---|
-| `Quileg-HID-0.9.36-arm64.dmg` | Apple 芯片（M1–M4） | `fa5e01a2ec74f94227daba0ecbcc783720f39de43c42e24efd067ce276ee2fa1` |
-| `Quileg-HID-0.9.36-intel.dmg` | Intel Mac（macOS 13–26） | `7ffcc8ef24d58cd2b76472b264d69d391694a48b67536d1e3c55e174ef0fb7f3` |
+| `Quileg-HID-0.9.37-arm64.dmg` | Apple 芯片（M1–M4） | `96d6f2381de6f6854788b399fd441288a909324e292060c04b54844bb29a952d` |
+| `Quileg-HID-0.9.37-intel.dmg` | Intel Mac（macOS 13–26） | `3bfb30bc8d56542aebd844dad6ccf8832981c997b7741dba206132ec867c7561` |
 
 **两个包不通用**：装错会提示「需要 Apple 芯片」。包内 `VERSION.txt` 的 `Arch:` 行可以核对；
 下载后可用同 Release 中的 `.sha256` 文件校验完整性。
@@ -36,7 +36,15 @@
 
 安装包已用 Developer ID 签名、经 Apple 公证，公证票据写入包内，首次启动无需联网验证。
 
-## 0.9.36 要点
+## 0.9.37 要点
+
+- **校准鲁棒性补丁**：X 档位延长到 1100 单位（慢速指针也能测到屏幕右侧）、
+  409 重试改为 6 次递增退避、自动剔除表尾离群点、顶角停车用真值闭环调参。
+- 真机结果：同一台 iPad 的校准自校验从「中位 196.8 px」降到 **15.3 px**，
+  独立复测中位 **8.3 pt / 16.5 px**。
+- 其余同 0.9.36：底边不越界、画布看门狗、停车点合理性、探针真值（可选）。
+
+## 上一版（0.9.36）要点
 
 - **校准改用「真值」**：配合 Pointer Tester 探针时，直接读屏幕上的指针坐标，
   不再靠帧差找质心；程序坞上方、圆角附近不再误判。没有探针时自动回落到旧办法。
