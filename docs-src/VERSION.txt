@@ -1,4 +1,4 @@
-Quileg HID 0.9.35 (build 90)
+Quileg HID 0.9.36 (build 91)
 Arch: arm64 (Apple Silicon) / intel (x86_64)
 Firmware 0.7.0 (16MB)
 Built: 2026-10-24

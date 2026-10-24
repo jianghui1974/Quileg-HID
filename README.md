@@ -9,12 +9,12 @@
 
 ## 最新版本
 
-**0.9.35（Build 90）** · 2026-10-24 · [Release 说明](https://github.com/jianghui1974/Quileg-HID/releases/tag/v0.9.35)
+**0.9.36（Build 91）** · 2026-10-25 · [Release 说明](https://github.com/jianghui1974/Quileg-HID/releases/tag/v0.9.36)
 
 | 安装包 | 适用机器 | SHA-256 |
 |---|---|---|
-| `Quileg-HID-0.9.35-arm64.dmg` | Apple 芯片（M1–M4） | `c4c1f1495983634c98a7734700874b06c38a392142a38bfb4f5315bf0d8996c9` |
-| `Quileg-HID-0.9.35-intel.dmg` | Intel Mac（macOS 13–26） | `ea5ef5c707d8eb789199b30f221af7c920db26130a85b7e96ed871ecafb67115` |
+| `Quileg-HID-0.9.36-arm64.dmg` | Apple 芯片（M1–M4） | `fa5e01a2ec74f94227daba0ecbcc783720f39de43c42e24efd067ce276ee2fa1` |
+| `Quileg-HID-0.9.36-intel.dmg` | Intel Mac（macOS 13–26） | `7ffcc8ef24d58cd2b76472b264d69d391694a48b67536d1e3c55e174ef0fb7f3` |
 
 **两个包不通用**：装错会提示「需要 Apple 芯片」。包内 `VERSION.txt` 的 `Arch:` 行可以核对；
 下载后可用同 Release 中的 `.sha256` 文件校验完整性。
@@ -36,7 +36,17 @@
 
 安装包已用 Developer ID 签名、经 Apple 公证，公证票据写入包内，首次启动无需联网验证。
 
-## 0.9.35 要点
+## 0.9.36 要点
+
+- **校准改用「真值」**：配合 Pointer Tester 探针时，直接读屏幕上的指针坐标，
+  不再靠帧差找质心；程序坞上方、圆角附近不再误判。没有探针时自动回落到旧办法。
+- **底边不越界**：指针被推到屏幕最底边会让 iPad 直接回主屏（iPadOS 26 的上滑手势），
+  校准的 y=1400/1500 档位正好这么干——这是 10-24 两次校准跑飞的根因，已修。
+- **画布看门狗**：中途切 App / 回桌面，会在几秒内中止并说明原因，不再白跑 6 分钟。
+- **停车点合理性**：非物理停车点（如 TL 落在屏幕中间）直接拒绝。
+- 实测：同一台 iPad，左下角误差 168/409 pt → **6.2/9.0 pt**，六点中位 **9.0 pt**。
+
+## 上一版（0.9.35）要点
 
 - **修 0.9.34 的 iPad 点击回归（重要）**：0.9.34 的程序坞修复只判了一个方向的钳位，
   导致 iPad 上**上半屏的目标（顶部搜索框、导航栏等）全部落到画面顶端**、点击无效。
