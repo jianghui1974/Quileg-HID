@@ -9,12 +9,12 @@
 
 ## 最新版本
 
-**0.9.37（Build 92）** · 2026-10-25 · [Release 说明](https://github.com/jianghui1974/Quileg-HID/releases/tag/v0.9.37)
+**0.9.38（Build 93）** · 2026-10-25 · [Release 说明](https://github.com/jianghui1974/Quileg-HID/releases/tag/v0.9.38)
 
 | 安装包 | 适用机器 | SHA-256 |
 |---|---|---|
-| `Quileg-HID-0.9.37-arm64.dmg` | Apple 芯片（M1–M4） | `96d6f2381de6f6854788b399fd441288a909324e292060c04b54844bb29a952d` |
-| `Quileg-HID-0.9.37-intel.dmg` | Intel Mac（macOS 13–26） | `3bfb30bc8d56542aebd844dad6ccf8832981c997b7741dba206132ec867c7561` |
+| `Quileg-HID-0.9.38-arm64.dmg` | Apple 芯片（M1–M4） | `3c72a6dfe12ff9385075fe696b03eaf8a5aa8fde6cec06ab23e4f6c175dcb1c4` |
+| `Quileg-HID-0.9.38-intel.dmg` | Intel Mac（macOS 13–26） | `40c7f015a45eeb37be77c6c9ee139ea6a583595d12085aedc64ca22870088dbe` |
 
 **两个包不通用**：装错会提示「需要 Apple 芯片」。包内 `VERSION.txt` 的 `Arch:` 行可以核对；
 下载后可用同 Release 中的 `.sha256` 文件校验完整性。
@@ -36,7 +36,15 @@
 
 安装包已用 Developer ID 签名、经 Apple 公证，公证票据写入包内，首次启动无需联网验证。
 
-## 0.9.37 要点
+## 0.9.38 要点
+
+- **刷写前校验分区表**：板子若残留别的分区布局（以前刷过别的项目），「仅升级」能刷进去、
+  固件也能跑，但 Wi-Fi 配置写不进去。现在只要 `nvs` 不在 0x9000/0x5000 或 `app0` 不在
+  0x10000，就**只允许整包刷写**，并在固件页说明原因。
+- 分区表正确的板子不受影响，仍然可以「仅升级」并保留 Wi-Fi。
+- 其余同 0.9.37。
+
+## 上一版（0.9.37）要点
 
 - **校准鲁棒性补丁**：X 档位延长到 1100 单位（慢速指针也能测到屏幕右侧）、
   409 重试改为 6 次递增退避、自动剔除表尾离群点、顶角停车用真值闭环调参。
