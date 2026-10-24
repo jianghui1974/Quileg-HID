@@ -9,12 +9,12 @@
 
 ## 最新版本
 
-**0.9.34（Build 89）** · 2026-10-24 · [Release 说明](https://github.com/jianghui1974/Quileg-HID/releases/tag/v0.9.34)
+**0.9.35（Build 90）** · 2026-10-24 · [Release 说明](https://github.com/jianghui1974/Quileg-HID/releases/tag/v0.9.35)
 
 | 安装包 | 适用机器 | SHA-256 |
 |---|---|---|
-| `Quileg-HID-0.9.34-arm64.dmg` | Apple 芯片（M1–M4） | `8a45e90ee1123ee7543ce24ba3279754413ad14fc4baec674e01ac779fd0107d` |
-| `Quileg-HID-0.9.34-intel.dmg` | Intel Mac（macOS 13–26） | `a7781f608b6707b066047490970d1ce64ffbab33247da78a353aacd0644c2a30` |
+| `Quileg-HID-0.9.35-arm64.dmg` | Apple 芯片（M1–M4） | `c4c1f1495983634c98a7734700874b06c38a392142a38bfb4f5315bf0d8996c9` |
+| `Quileg-HID-0.9.35-intel.dmg` | Intel Mac（macOS 13–26） | `ea5ef5c707d8eb789199b30f221af7c920db26130a85b7e96ed871ecafb67115` |
 
 **两个包不通用**：装错会提示「需要 Apple 芯片」。包内 `VERSION.txt` 的 `Arch:` 行可以核对；
 下载后可用同 Release 中的 `.sha256` 文件校验完整性。
@@ -36,7 +36,17 @@
 
 安装包已用 Developer ID 签名、经 Apple 公证，公证票据写入包内，首次启动无需联网验证。
 
-## 0.9.34 要点
+## 0.9.35 要点
+
+- **修 0.9.34 的 iPad 点击回归（重要）**：0.9.34 的程序坞修复只判了一个方向的钳位，
+  导致 iPad 上**上半屏的目标（顶部搜索框、导航栏等）全部落到画面顶端**、点击无效。
+  实测目标 `0.5,0.3` 从偏 210 pt 降到 17 pt；iPhone 不受影响。
+  **用 iPad 的请务必升级**。
+- **校准加了验证闸门**：向导结束时的验证中位误差超过 80 px 就中止并恢复旧校准表，
+  不再把坏表写进档案（以前只把误差写进报告）。
+- 其余与 0.9.34 相同：Intel 版、iPad 顶边面板修复、程序坞不挡底部点击、双板通用固件 0.7.0。
+
+## 上一版（0.9.34）要点
 
 - **新增 Intel（x86_64）版本**：与 Apple 芯片版功能一致，包含 AirPlay 无线投屏；
 - **iPad「锁屏」修复**：iPadOS 26 上指针碰到屏幕顶边会拉下通知中心/控制中心（看起来像锁屏）。
