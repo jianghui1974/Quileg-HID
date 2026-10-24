@@ -54,7 +54,8 @@
       <div class="meta-line">
         <span id="version-line">免费</span>
         <span>macOS 13.0 及以上</span>
-        <span>Apple Silicon</span>
+        <span>Apple Silicon / Intel</span>
+        <span>Apple 芯片选 -arm64 · Intel 选 -intel</span>
         <span>已公证</span>
       </div>
     </div>
@@ -312,7 +313,7 @@
     <h3 style="margin:44px 0 16px;color:var(--navy)">系统要求</h3>
     <table class="spec">
       <tr><th>操作系统</th><td>macOS 13.0（Ventura）及以上</td></tr>
-      <tr><th>处理器</th><td>Apple Silicon（M 系列）。<strong>暂不支持 Intel Mac</strong></td></tr>
+      <tr><th>处理器</th><td>Apple Silicon（M1–M4）或 Intel Mac（macOS 13–26）。<strong>两个架构分开下载、互不通用</strong>：Apple 芯片用 <code>-arm64</code>，Intel 用 <code>-intel</code></td></tr>
       <tr><th>配套硬件</th><td>ESP32-S3 开发板，16MB Flash。已验证：Seeed XIAO ESP32S3 Plus；ESP32-S3-WROOM-1-N16R8 模组的第三方板（部分批次用 XMC Flash，需实测）</td></tr>
       <tr><th>网络</th><td>Mac 与板子处于同一局域网（Wi-Fi 2.4GHz）</td></tr>
       <tr><th>被控设备</th><td>iPhone / iPad（AirPlay 屏幕镜像）；Android / Windows / macOS（需 UVC 采集卡）</td></tr>
@@ -394,7 +395,7 @@
     <details>
       <summary>支持 Intel Mac 吗？</summary>
       <div class="body">
-        <p>暂不支持，当前只提供 Apple Silicon 构建。</p>
+        <p>支持，请下载 Intel 包（文件名以 <code>-intel.dmg</code> 结尾）。功能与 Apple 芯片版一致，同样签名 + 公证；注意 Intel Mac 的系统上限是 macOS 26。</p>
       </div>
     </details>
 
