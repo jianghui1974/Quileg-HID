@@ -284,7 +284,7 @@
       <div class="step">
         <span class="num">1</span>
         <h3>Get a board</h3>
-        <p>Any ESP32-S3 with 16MB flash. If it has an external antenna connector, <strong>connect the antenna</strong> — Wi-Fi is unusable without it.</p>
+        <p>Any ESP32-S3 with <strong>16MB flash</strong>. 8MB boards do not work — since 0.9.39 the app checks the real flash size before flashing and refuses. If the board has an external antenna connector, <strong>connect the antenna</strong> — Wi-Fi is unusable without it.</p>
       </div>
       <div class="step">
         <span class="num">2</span>
@@ -380,6 +380,29 @@
         <p>Yes — download the Intel build (file name ends with <code>-intel.dmg</code>). It matches the Apple Silicon build feature-for-feature and is signed and notarized. Note that macOS 26 is the last release for Intel Macs.</p>
       </div>
     </details>
+
+    <details>
+      <summary>Will an 8 MB Flash board work?</summary>
+      <div class="body">
+        <p>No — you need <strong>16 MB Flash</strong>. Since 0.9.39 the app reads the board's real flash size before
+        flashing and, if it does not match the package layout, stops <strong>before erasing anything</strong> and tells you
+        both numbers. The firmware and partition table on the board are left untouched.</p>
+        <p>Before that, an 8 MB board flashed with a 16 MB package through "firmware only" reported success and booted,
+        but Wi-Fi provisioning always failed — it looked like a network problem.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Calibration stops halfway with "pointer not found", or taps land far off?</summary>
+      <div class="body">
+        <p>That is what 0.9.39 fixes: on a portrait iPhone the probe readout was cropped, a single outlier point could
+        bend a whole segment of the mapping table, and a pointer still in flight could be read as its destination.
+        If you are upgrading with an old table, run the calibration once more.</p>
+        <p>Keep the device untouched during calibration and set Auto-Lock to Never. Re-calibrate when you change the phone,
+        the mirroring resolution, the pointer size, the video source (AirPlay ↔ UVC) or the orientation. Changing the board
+        does not require it.</p>
+      </div>
+    </details>
     <details>
       <summary>On iPad the pointer hitting the top edge looks like a lock screen?</summary>
       <div class="body">
@@ -388,15 +411,6 @@
         or click empty space to dismiss it.</p>
         <p>Since 0.9.33 the app parks the pointer from the bottom edge instead, so it never touches the top edge. After upgrading,
         run the calibration once more. Keep the device untouched during calibration and set Auto-Lock to Never.</p>
-      </div>
-    </details>
-
-    <details>
-      <summary>Clicks in the top half of the iPad do nothing (0.9.34)?</summary>
-      <div class="body">
-        <p>That was a regression in <strong>0.9.34</strong>: the dock fix clamped targets in one direction only,
-        so anything in the top half of the iPad (search fields, nav bars) landed at the very top edge.
-        <strong>Fixed in 0.9.35</strong> — just upgrade. iPhones were never affected.</p>
       </div>
     </details>
 

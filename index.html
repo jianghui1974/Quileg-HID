@@ -296,7 +296,7 @@
       <div class="step">
         <span class="num">1</span>
         <h3>准备板子</h3>
-        <p>买一块 ESP32-S3（16MB Flash 版本）。若板子带外置天线接口，<strong>务必插上天线</strong>，否则 Wi-Fi 几乎收不到信号。</p>
+        <p>买一块 ESP32-S3（<strong>16MB Flash</strong> 版本）。8MB 的板子不能用——0.9.39 起刷写前会读出真实容量并直接拒绝。若板子带外置天线接口，<strong>务必插上天线</strong>，否则 Wi-Fi 几乎收不到信号。</p>
       </div>
       <div class="step">
         <span class="num">2</span>
@@ -398,6 +398,26 @@
         <p>支持，请下载 Intel 包（文件名以 <code>-intel.dmg</code> 结尾）。功能与 Apple 芯片版一致，同样签名 + 公证；注意 Intel Mac 的系统上限是 macOS 26。</p>
       </div>
     </details>
+
+    <details>
+      <summary>8 MB Flash 的板子能用吗？</summary>
+      <div class="body">
+        <p>不能，需要 <strong>16 MB Flash</strong>。0.9.39 起，刷写前会先读板子的真实容量，与安装包的布局对不上就
+        <strong>在擦写之前</strong>终止，并说清两边各是多少 MB——板子里的固件和分区表原样保留。</p>
+        <p>在此之前，8 MB 板用「仅升级固件」刷 16 MB 的包会显示刷写成功、固件也能起来，但配网永远失败，
+        看上去像 Wi-Fi 的问题。</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>校准跑到一半报「测不到指针」，或者点偏得很厉害？</summary>
+      <div class="body">
+        <p>0.9.39 修的就是这类问题：竖屏 iPhone 上探针读数会被裁掉、表里个别点离群会把整段映射带歪、
+        光标还没停稳就把中途位置当成终点。升级后如果还在用旧表，建议<strong>重校一次</strong>。</p>
+        <p>校准期间别碰设备，自动锁定设为「永不」。换手机、改镜像分辨率、改指针大小、换视频源（AirPlay ↔ UVC）、
+        把手机横过来，都需要重校；换板子不用。</p>
+      </div>
+    </details>
     <details>
       <summary>iPad 上指针一碰屏幕顶边就出现「锁屏」？</summary>
       <div class="body">
@@ -405,16 +425,6 @@
         画面和大时钟跟锁屏一模一样，按 <code>Esc</code> 或点空白就能关掉。</p>
         <p>0.9.33 起归位改为「底部锚定」，不再把指针顶到角落，因此不会再触发它；
         旧版本升级后请<strong>重新校准一次</strong>。校准期间别碰设备，自动锁定建议设为「永不」。</p>
-      </div>
-    </details>
-
-    <details>
-      <summary>iPad 上点屏幕上半部分没反应（0.9.34 的问题）？</summary>
-      <div class="body">
-        <p>这是 <strong>0.9.34 的回归</strong>：程序坞修复时只判了一个方向的钳位，导致 iPad 上
-        上半屏的点击目标（顶部搜索框、导航栏、状态栏附近）都会被放到画面顶端。
-        <strong>0.9.35 已修复</strong>，升级即可；iPhone 不受影响。</p>
-        <p>判断方法：点一个上半屏按钮，如果指针跑到屏幕顶边、点击无效，就是这个问题。</p>
       </div>
     </details>
 

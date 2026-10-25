@@ -1,7 +1,7 @@
 # 第三方开源组件声明（Third-Party Notices）
 
 > **产品**：Quileg HID（Mac 控制端 + ESP32-S3 BLE HID 板子）
-> **最后更新**：2026-10-22
+> **最后更新**：2026-10-24
 > **适用**：0.9.7 及以后的 DMG / App / 源码包
 > **维护规则**：新增或升级任何第三方组件时，必须同步本文件与 `licenses/` 目录，否则打包脚本会拒绝出包。
 
@@ -12,7 +12,7 @@
 | 组件 | 许可 | 在 Quileg HID 中的角色 | 是否修改 |
 |---|---|---|---|
 | [esp32-iphone-agent](https://github.com/onehumanbeing/esp32-iphone-agent) | **MIT** | 服务端 `hidagent` 的基础；固件协议参考 | 是（见 §1.2） |
-| [UxPlay](https://github.com/FDH2/UxPlay) | **GPL-3.0** | AirPlay 接收器（随 App 分发的独立二进制） | 否 |
+| [UxPlay](https://github.com/FDH2/UxPlay) | **GPL-3.0** | AirPlay 接收器（随 App 分发的独立二进制） | 是（Intel 版仅两行构建补丁，见 §2.2） |
 | GStreamer 及其插件 | LGPL-2.1 | UxPlay 的运行时依赖（动态链接的 dylib） | 否 |
 | Python 运行时与依赖 | 各自许可（MIT/BSD/Apache-2.0/LGPL） | App 内置的 Python 解释器与库 | 否 |
 
@@ -92,7 +92,10 @@ SOFTWARE.
 
 ### 2.2 分发形式
 
-- Quileg HID 以**未经修改的独立可执行文件**形式随 App 分发：`Quileg HID.app/Contents/Frameworks/airplay/uxplay`；
+- Quileg HID 以**独立可执行文件**形式随 App 分发：`Quileg HID.app/Contents/Frameworks/airplay/uxplay`；
+- arm64 版为未经修改的上游构建；**Intel 版**套用了一个**只有两行的构建补丁**
+  [`packaging/uxplay-build.patch`](packaging/uxplay-build.patch)：把 `PKG_CONFIG_PATH` 的赋值从「覆盖」改成「环境优先」，
+  以便链接官方 universal GStreamer。该补丁不改变 UxPlay 的任何功能逻辑；对应源码 = 上游源码 + 该补丁（见 §2.3）；
 - Quileg HID 与 UxPlay 通过**进程边界**（命令行参数 + 标准输出管道）交互，两者是独立程序；GPL-3.0 的覆盖范围仅及 UxPlay 本身及其衍生作品，**不延伸到 Quileg HID 的自有代码**；
 - 随包同时提供 GPL-3.0 全文：[`licenses/GPL-3.0.txt`](licenses/GPL-3.0.txt)。
 
@@ -100,7 +103,8 @@ SOFTWARE.
 
 按 GPL-3.0 的要求，我们向收到本产品的任何人提供 UxPlay 的**对应源码**：
 
-1. **同一下载页提供源码包**：`uxplay-1.74-source.tar.gz`（与所分发二进制同版本的完整源码，含构建脚本）；
+1. **同一下载页提供源码包**：`uxplay-master-source.tar.gz`（与所分发二进制同版本的上游源码）
+   与 `uxplay-build.patch`（Intel 构建补丁）；
 2. 或访问上游仓库对应版本：<https://github.com/FDH2/UxPlay>；
 3. 若以上方式不可用，可书面请求 `quileg@airdiode.com`，我们在 **3 年内**免费提供完整源码（可选用物理介质，仅收取成本费）。
 

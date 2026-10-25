@@ -40,10 +40,10 @@
     <p class="doc-kicker">文档 · 随安装包分发</p>
     <h1>第三方声明与许可</h1>
     <p class="doc-lead">随包分发的开源组件、许可类型与合规说明。</p>
-<blockquote><p><strong>产品</strong>：Quileg HID（Mac 控制端 + ESP32-S3 BLE HID 板子） <strong>最后更新</strong>：2026-10-22 <strong>适用</strong>：0.9.7 及以后的 DMG / App / 源码包 <strong>维护规则</strong>：新增或升级任何第三方组件时，必须同步本文件与 <code>licenses/</code> 目录，否则打包脚本会拒绝出包。</p></blockquote>
+<blockquote><p><strong>产品</strong>：Quileg HID（Mac 控制端 + ESP32-S3 BLE HID 板子） <strong>最后更新</strong>：2026-10-24 <strong>适用</strong>：0.9.7 及以后的 DMG / App / 源码包 <strong>维护规则</strong>：新增或升级任何第三方组件时，必须同步本文件与 <code>licenses/</code> 目录，否则打包脚本会拒绝出包。</p></blockquote>
 <hr>
 <h2>0. 总览</h2>
-<div class="table-wrap"><table class="doc-table"><thead><tr><th>组件</th><th>许可</th><th>在 Quileg HID 中的角色</th><th>是否修改</th></tr></thead><tbody><tr><td><a href="https://github.com/onehumanbeing/esp32-iphone-agent" target="_blank" rel="noopener">esp32-iphone-agent</a></td><td><strong>MIT</strong></td><td>服务端 <code>hidagent</code> 的基础；固件协议参考</td><td>是（见 §1.2）</td></tr><tr><td><a href="https://github.com/FDH2/UxPlay" target="_blank" rel="noopener">UxPlay</a></td><td><strong>GPL-3.0</strong></td><td>AirPlay 接收器（随 App 分发的独立二进制）</td><td>否</td></tr><tr><td>GStreamer 及其插件</td><td>LGPL-2.1</td><td>UxPlay 的运行时依赖（动态链接的 dylib）</td><td>否</td></tr><tr><td>Python 运行时与依赖</td><td>各自许可（MIT/BSD/Apache-2.0/LGPL）</td><td>App 内置的 Python 解释器与库</td><td>否</td></tr></tbody></table></div>
+<div class="table-wrap"><table class="doc-table"><thead><tr><th>组件</th><th>许可</th><th>在 Quileg HID 中的角色</th><th>是否修改</th></tr></thead><tbody><tr><td><a href="https://github.com/onehumanbeing/esp32-iphone-agent" target="_blank" rel="noopener">esp32-iphone-agent</a></td><td><strong>MIT</strong></td><td>服务端 <code>hidagent</code> 的基础；固件协议参考</td><td>是（见 §1.2）</td></tr><tr><td><a href="https://github.com/FDH2/UxPlay" target="_blank" rel="noopener">UxPlay</a></td><td><strong>GPL-3.0</strong></td><td>AirPlay 接收器（随 App 分发的独立二进制）</td><td>是（Intel 版仅两行构建补丁，见 §2.2）</td></tr><tr><td>GStreamer 及其插件</td><td>LGPL-2.1</td><td>UxPlay 的运行时依赖（动态链接的 dylib）</td><td>否</td></tr><tr><td>Python 运行时与依赖</td><td>各自许可（MIT/BSD/Apache-2.0/LGPL）</td><td>App 内置的 Python 解释器与库</td><td>否</td></tr></tbody></table></div>
 <p><strong>边界说明</strong>：Quileg HID 的桌面控制端（<code>app/</code>）、校准与指针系统（<code>control/</code>）、板子固件（<code>firmware/</code>）、交互与视觉设计均为 Quileg 自有实现，不在上述任何开源许可的覆盖范围内。</p>
 <hr>
 <h2>1. esp32-iphone-agent（MIT）</h2>
@@ -83,10 +83,10 @@ SOFTWARE.</code></pre>
 <h3>2.1 来源与版本</h3>
 <div class="table-wrap"><table class="doc-table"><thead><tr><th>项</th><th>值</th></tr></thead><tbody><tr><td>仓库</td><td><a href="https://github.com/FDH2/UxPlay" target="_blank" rel="noopener">https://github.com/FDH2/UxPlay</a></td></tr><tr><td>版本</td><td>UxPlay 1.74（构建于 2026-10，对应上游 <code>master</code>）</td></tr><tr><td>许可</td><td>GNU General Public License v3.0</td></tr></tbody></table></div>
 <h3>2.2 分发形式</h3>
-<ul><li>Quileg HID 以<strong>未经修改的独立可执行文件</strong>形式随 App 分发：<code>Quileg HID.app/Contents/Frameworks/airplay/uxplay</code>；</li><li>Quileg HID 与 UxPlay 通过<strong>进程边界</strong>（命令行参数 + 标准输出管道）交互，两者是独立程序；GPL-3.0 的覆盖范围仅及 UxPlay 本身及其衍生作品，<strong>不延伸到 Quileg HID 的自有代码</strong>；</li><li>随包同时提供 GPL-3.0 全文：<a href="licenses/GPL-3.0.txt"><code>licenses/GPL-3.0.txt</code></a>。</li></ul>
+<ul><li>Quileg HID 以<strong>独立可执行文件</strong>形式随 App 分发：<code>Quileg HID.app/Contents/Frameworks/airplay/uxplay</code>；</li><li>arm64 版为未经修改的上游构建；<strong>Intel 版</strong>套用了一个<strong>只有两行的构建补丁</strong> <a href="packaging/uxplay-build.patch"><code>packaging/uxplay-build.patch</code></a>：把 <code>PKG_CONFIG_PATH</code> 的赋值从「覆盖」改成「环境优先」， 以便链接官方 universal GStreamer。该补丁不改变 UxPlay 的任何功能逻辑；对应源码 = 上游源码 + 该补丁（见 §2.3）；</li><li>Quileg HID 与 UxPlay 通过<strong>进程边界</strong>（命令行参数 + 标准输出管道）交互，两者是独立程序；GPL-3.0 的覆盖范围仅及 UxPlay 本身及其衍生作品，<strong>不延伸到 Quileg HID 的自有代码</strong>；</li><li>随包同时提供 GPL-3.0 全文：<a href="licenses/GPL-3.0.txt"><code>licenses/GPL-3.0.txt</code></a>。</li></ul>
 <h3>2.3 对应源码（GPL-3.0 §6 履约）</h3>
 <p>按 GPL-3.0 的要求，我们向收到本产品的任何人提供 UxPlay 的<strong>对应源码</strong>：</p>
-<ol><li><strong>同一下载页提供源码包</strong>：<code>uxplay-1.74-source.tar.gz</code>（与所分发二进制同版本的完整源码，含构建脚本）；</li><li>或访问上游仓库对应版本：<a href="https://github.com/FDH2/UxPlay" target="_blank" rel="noopener">https://github.com/FDH2/UxPlay</a>；</li><li>若以上方式不可用，可书面请求 <code>quileg@airdiode.com</code>，我们在 <strong>3 年内</strong>免费提供完整源码（可选用物理介质，仅收取成本费）。</li></ol>
+<ol><li><strong>同一下载页提供源码包</strong>：<code>uxplay-master-source.tar.gz</code>（与所分发二进制同版本的上游源码） 与 <code>uxplay-build.patch</code>（Intel 构建补丁）；</li><li>或访问上游仓库对应版本：<a href="https://github.com/FDH2/UxPlay" target="_blank" rel="noopener">https://github.com/FDH2/UxPlay</a>；</li><li>若以上方式不可用，可书面请求 <code>quileg@airdiode.com</code>，我们在 <strong>3 年内</strong>免费提供完整源码（可选用物理介质，仅收取成本费）。</li></ol>
 <p>源码包的生成脚本见 <code>packaging/fetch_uxplay_source.sh</code>，发布时与 DMG 放在同一目录。</p>
 <hr>
 <h2>3. GStreamer 及其他随包原生库</h2>

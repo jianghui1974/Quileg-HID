@@ -83,6 +83,84 @@ usage: 0x0C 0x0D 0x0E 0x0F 0x10 | 0x12 | 0x18 | 0x24 0x25 0x26 | 0x37</code></pr
 <p><strong>其他实测</strong>：<code>F5</code>（Apple 键盘听写键）无效且会收起软键盘；Mac 音量 56% 够用； 自动标点（<code>，</code> <code>。</code>）和自动换行由 iOS 加，不是 <code>speak</code> 加的；单会话约 <strong>30 s 无话音</strong>自动结束。</p>
 <p><strong>与拼音点选的关系</strong>：语音桥快，但依赖扬声器/麦克风/环境噪声；关键内容仍要 OCR 复核， 听写不可用时回退 §2 的拼音 + 候选点选。</p>
 <blockquote><p>证据：操作员 2026-10-23 实测（iPhone iOS 18 / 固件 0.7.0 / App 0.9.25）： 听写快捷键设置、两句连续落屏、单击 Control 停止的截图。</p></blockquote>
+<h3>2.3 Intel 版 OCR：<code>.accurate</code> 不可用时自动降级 <code>.fast</code>（2026-10-24 实测）</h3>
+<p><strong>现象</strong>：Intel 包（x86_64）调 <code>ocr</code> / <code>click_text</code> 时，Vision 的 <code>.accurate</code> 识别直接报错 <code>TextRecognition.CRImageReaderError 9</code>，<code>ocr-text</code> 返回 <code>vision request failed</code>，OCR 全不可用。</p>
+<p><strong>实测（同一张图，同一个 <code>ocr.swift</code>）</strong>：</p>
+<div class="table-wrap"><table class="doc-table"><thead><tr><th>请求</th><th>arm64</th><th>x86_64（Rosetta / Intel 代码路径）</th></tr></thead><tbody><tr><td><code>VNDetectRectanglesRequest</code></td><td>OK</td><td>OK</td></tr><tr><td><code>VNDetectBarcodesRequest</code></td><td>OK</td><td>OK</td></tr><tr><td><code>VNRecognizeTextRequest</code> <code>.fast</code>（rev 1/2/3）</td><td>OK</td><td><strong>OK</strong></td></tr><tr><td><code>VNRecognizeTextRequest</code> <code>.accurate</code>（rev 1/2/3）</td><td>OK</td><td><strong>全部 CRImageReaderError 9</strong></td></tr></tbody></table></div>
+<p>也就是说不是 Vision 整体坏掉，而是 <strong><code>.accurate</code> 用的那套 TextRecognition 模型在 x86_64 上跑不了</strong> （macOS 26 时代的模型只带 ARM 内核的可能性很大；真 Intel 机器上很可能一样）。</p>
+<p><strong>处理</strong>：<code>control/ocr.swift</code> 先试 <code>.accurate</code>，失败后自动用 <code>.fast</code> 重试，并在 stderr 打一行 <code>ocr: accurate 不可用，已降级为 fast</code>。<strong>功能不中断，准确率略降</strong>（短标签/数字仍可用， 长文与生僻字更容易错；要点选候选时先用 <code>ocr()</code> 看清结果再点）。</p>
+<p><strong>判断自己是不是这种情况</strong>：<code>app_logs(grep="ocr")</code> 或直接跑 <code>"Quileg HID.app/Contents/Frameworks/control/bin/ocr-text" &lt;图&gt;</code> 看有没有那行降级提示。 arm64 机器上不会出现。</p>
+<p><strong>没做</strong>：给 Intel 换第三方 OCR 引擎（体积、许可、中文质量都要重评）。 真机上如果 <code>.fast</code> 也不够用，再考虑。</p>
+<h3>2.4 iPad「锁屏」其实是顶边面板（2026-10-24 真机定案）</h3>
+<p><strong>现象</strong>：被控设备是 iPad（iPadOS 26）时，指针移到左上角/顶边，屏幕变成「锁屏」的样子， 校准与点击全部中断。</p>
+<p><strong>结论（真机实测）</strong>：<strong>不是锁屏，是 iPadOS 26 的顶边手势</strong>——指针碰到屏幕顶边（y≈0）时， 左半区拉下<strong>通知中心</strong>、右半区拉下<strong>控制中心</strong>；两者都是全屏毛玻璃 + 大时钟，看起来和锁屏一样。 <code>Esc</code> 能关闭通知中心，点空白能关闭控制中心（两者都实测过）。</p>
+<p><strong>证据（2026-10-24，iPad + 0.7.0 + 0.9.32）</strong>：</p>
+<div class="table-wrap"><table class="doc-table"><thead><tr><th>动作</th><th>结果</th></tr></thead><tbody><tr><td><code>release 7</code> → <code>move -2000 -2000</code>（纯移动，无点击）</td><td>出现通知中心（x≈0.22）</td></tr><tr><td><code>move 4000 -2000</code>（到顶边右半）</td><td>出现控制中心</td></tr><tr><td><code>move -2000 0</code> / <code>move 2000 0</code>（左/右边，y≈0.45）</td><td>正常，无面板</td></tr><tr><td><code>move 2000 2000</code>（右下角）</td><td>正常，无面板</td></tr><tr><td>40 小步慢速走到顶边</td><td>仍出现控制中心（所以是<strong>位置</strong>触发，不是速度）</td></tr><tr><td><code>key esc</code></td><td>面板关闭（通知中心/控制中心都试过）</td></tr></tbody></table></div>
+<p><strong>为什么每次都会踩到</strong>：<code>Device.goto_corner()</code> 的 <code>home</code>（40 × <code>move -127,-127</code>）必然把指针顶到 (0,0)，所以<strong>每一次移动/点击的归位都会碰顶边</strong>。iPadOS 26 的正常鼠标用户也会遇到同样的事， 不是固件、不是按键、不是校准。</p>
+<p><strong>已排除</strong>：左键卡住（<code>release 7</code> 后仍复现）、点击（全程无 <code>press</code>/<code>click</code>）、 触发角 Hot Corners（四个角都是「无」）、停留控制 Dwell（已关）、自动锁定（设为「永不」， 且 60 秒空闲对照没有锁）。</p>
+<p><strong>规避（0.9.33 起已内置）</strong>：</p>
+<ol><li><strong>看错时先按 <code>Esc</code></strong>：能关掉就是面板，不是锁屏（通知中心/控制中心都能关）；</li><li><strong>归位改成「底部锚定」</strong>：底边 + 左右边（实测安全）夹住指针，顶角从底边上行 固定单位到达，<strong>完全不走 <code>home</code></strong>，所以不会再碰 y=0。校准档案里多了三个字段： <code>park: "bottom"</code>、<code>park_up: {TL, TR}</code>（顶角上行单位）、<code>park_lift</code>（底角上抬，避开程序坞）；</li><li><strong>旧档案仍走旧路径</strong>（<code>home</code>），所以 iPhone 等设备不用动；<strong>iPad 要重新校准一次</strong>才会切到新模式；</li><li>校准期间别碰设备；自动锁定设「永不」。</li></ol>
+<p><strong>实测（iPad 1554×1080，2026-10-24）</strong>：停车点 TL(0.019,0.056) / TR(0.979,0.056) / BL(0.027,0.880) / BR(0.977,0.867)，<code>park_up</code> 1130/1116，16 个随机点中位误差 25.9 px、 最大 76.6 px，全程无面板。</p>
+<p><strong>教训</strong>：iPad 上的「锁屏」先按 <code>Esc</code> 试一下——能关掉的就不是锁屏，是系统面板。</p>
+<p><strong>底部程序坞（2026-10-24 实操发现）</strong>：底部锚定会碰屏幕底边，iPad 的程序坞随即弹出， 盖住最下面约 18%。此时点击「计算器 =」「键盘底行」会命中程序坞，而不是 App。 规避（0.9.34 起内置）：目标 y&gt;0.75 时，先移到画面中部让程序坞收起（等 0.9 s），再下到目标； 比停车点更靠下的目标（底部 ~13%）钳到停车点高度——那一段本来也没有分段表。 实测修复后 <code>7+8=15</code>、<code>9×9=81</code> 均通过；AirPlay 截图会晚 0.3–0.5 s，验收等 2 s 再截。</p>
+<p><strong>窗口化 vs 全屏幕 App（2026-10-24 用户实测）</strong>：iPadOS 26 的「窗口化 App」模式里， 指针移到窗口边缘会变成缩放/移动光标，顶部还会出现菜单栏，行为更难预测； <strong>切到「全屏幕 App」后指针形状稳定</strong>。建议校准与日常使用保持同一种显示模式 （<code>设置 → 多任务与手势 → 全屏幕 App</code>）。全屏幕模式下实测点击误差 28–36 px，与校准表一致。</p>
+<h3>2.5 底部锚定的钳位只判了一个方向（0.9.34 回归，2026-10-24）</h3>
+<p><strong>现象</strong>：iPad 上点屏幕上半部分，指针落在画面顶端（y≈3%），点击完全无效； 没有报错，<code>calibrated=true</code>，<code>changed</code> 也可能是 true（指针动了）。</p>
+<p><strong>根因</strong>：0.9.34 的程序坞修复给 <code>move_to</code> 加了钳位，只判一个方向：</p>
+<pre><code>if ref_y is not None and y &gt; ref_y:
+    y_eff = ref_y     # 只考虑"比停车点更靠下"</code></pre>
+<p>底部锚定档案里 TL/TR 的停车点在<strong>顶边</strong>（<code>ref_y ≈ 0.05</code>），于是任何 <code>y &gt; 0.05</code> 的目标都被钳到 0.05，纵向命令根本不发（抓命令可见只有横向 <code>move 772 0</code>）。</p>
+<p><strong>为什么验收没发现</strong>：计算器按键多数走 BR（<code>nearest_corner</code> 取距离最小）， 钳位条件 <code>y &gt; 0.86</code> 不成立，所以 <code>7+8=15</code> 照常通过。<strong>验收要覆盖四个象限</strong>。</p>
+<p><strong>修法</strong>：两侧都判——底边停车点钳"更靠下"，顶边停车点钳"更靠上"（0.9.35）。 真值验证：同一张表，目标 <code>0.5,0.3</code> 从 210 pt 降到 17 pt。</p>
+<p><strong>判定方法</strong>：在 iPad 上点一个上半屏目标，如果落点贴顶边且 <code>changed=true</code>，先查 <code>move_to</code> 发出的纵向命令是不是空的。</p>
+<h3>2.6 误选「仅升级」后 Wi-Fi 配不上（分区表不匹配，2026-10-25 实测）</h3>
+<p><strong>现象</strong>：板子残留别的分区布局（例如以前刷过别的项目），在固件页选「仅升级固件」→ 刷写成功、固件也能启动，但到初始化阶段<strong>Wi-Fi/服务器配置写不进去</strong>。</p>
+<p><strong>根因</strong>：「仅升级」只写 <code>app0</code>（0x10000），<strong>分区表原样保留</strong>。如果板子上的 <code>nvs</code> 不在 0x9000 / 大小不是 0x5000（本固件的布局），NVS 就落在固件以为之外的区域， 配置写入必然失败——不是「板子没初始化」，而是<strong>分区表不是这一套</strong>。</p>
+<p>本固件的分区表（<code>factory-16m.bin</code> 内嵌，0x8000 起）：</p>
+<pre><code>nvs      0x9000  0x5000
+otadata  0xe000  0x2000
+app0     0x10000 0x140000
+app1     0x150000 0x140000
+spiffs   0x290000 0x160000
+coredump 0x3f0000 0x10000</code></pre>
+<p><strong>修法（0.9.38 起）</strong>：刷写前读 0x8000 的 4 KB 分区表并解析（<code>parse_partition_table</code> / <code>layout_matches</code>）。只要 nvs 或 app0 对不上，<strong>只允许整包刷写</strong>，并在界面上说明原因：</p>
+<blockquote><p>分区表不符（nvs 在 0x1f000/0x6000，本固件要求 0x9000/0x5000）：只能整包刷写</p></blockquote>
+<p>检查只在「检查板子」时做一次（多读 4 KB，约 1–2 秒）。</p>
+<h3>2.7 8 MB 板：「仅升级」报成功但 Wi-Fi 配不上（2026-10-25 已加防呆）</h3>
+<p><strong>现象</strong>：8 MB 的板子（例如只焊了 8 MB flash 的 S3）用「仅升级固件」刷 16 MB 布局的包， esptool 报写入成功、校验通过，固件也起得来，但<strong>配网永远失败</strong>——和 §2.6 同一类结局， 只是根因在 flash 容量而不是分区表内容。整包则会在 <code>erase_all</code> <strong>之前</strong>被 esptool 按尺寸拒绝。</p>
+<p><strong>根因</strong>：App 刷写时一直用 <code>--flash-size keep</code>，manifest 的 <code>flash_size: "16MB"</code> <strong>只用于 界面展示</strong>，从没读过板子的真实容量。8 MB 上 app 只有 1.17 MB，尺寸校验当然过得去。</p>
+<p><strong>修法（2026-10-25，未发版）</strong>：<code>FirmwareFlasher._write()</code> 先跑一次 <code>esptool flash-id</code>，解析 <code>Detected flash size: 16MB</code>，与 manifest 比对：</p>
+<ul><li>不符 → <strong>在 write-flash 之前</strong>终止（不擦不写、flash 原样保留），UI 显示「已拒绝刷写」；</li><li>读不到（老芯片 / secure download mode）→ <strong>不拦</strong>，仍由 §2.6 的分区表检查把关。</li></ul>
+<p>单测用 <code>mock.patch</code> 替掉 <code>_run_esptool</code>，断言拒绝发生在 <code>write-flash</code> 之前 （<code>app/tests/test_firmware.py::FlashSizeGuardTest</code>）。</p>
+<h3>2.8 竖屏 iPhone：探针 HUD 被裁掉 → 校准静默退回帧差（2026-10-25 定位并修复）</h3>
+<p><strong>现象</strong>：iPhone（500×1080）自动校准跑到第 55 个点（BR y=30）报 「测不到指针（画面在动/指针不可见）」，13 分钟作废；但同一次校准前面 54 个点都过了。 屏幕看着完全正常、探针 HUD 清清楚楚。</p>
+<p><strong>根因</strong>：<code>control/probe.py</code> 的 HUD 裁剪框写死成画面比例的 <code>(0.01, 0.03, 0.60, 0.62)</code>。 HUD 的宽度是<strong>按 pt 固定</strong>的（约 350），所以它在画面里的占比随屏幕宽度变： 375 pt 的 iPhone 竖屏上值列排到 <strong>x≈0.91</strong>，1180 pt 的 iPad 横屏只有 ≈0.55。 固定 0.60 在 iPhone 上把 <code>PT</code> 行第二个数和 <code>SIZE</code> 的「375 x 812」切掉 → <code>parse_pt</code> / <code>parse_size</code> 都返回 <code>None</code> → <code>pointer_fraction()</code> 永远 None → 连续 4 次后 <code>_no_probe = True</code>，<strong>整轮改走帧差却没有任何提示</strong>。</p>
+<p><strong>证据（同一帧）</strong>：</p>
+<div class="table-wrap"><table class="doc-table"><thead><tr><th>裁剪</th><th><code>parse_size</code></th><th><code>parse_pt</code></th><th>OCR 文本</th></tr></thead><tbody><tr><td><code>(0.01,0.03,0.60,0.62)</code></td><td><code>None</code></td><td><code>None</code></td><td><code>'375x'</code>、只有 <code>'340.35，'</code></td></tr><tr><td><code>(0,0.02,1.00,0.70)</code></td><td><code>(375.0, 812.0)</code></td><td><code>(340.35, 334.87)</code></td><td><code>'375 x 812'</code>、两个数都在</td></tr></tbody></table></div>
+<p><strong>修法</strong>：<code>_hud_box(w, h)</code> 按方向给右边界（竖屏整幅、横屏 0.62），下边界放到 0.70 （HUD 到 SCALE 行约 0.63）。另加一条：探针失效时 <code>progress("探针读不到，本次改用帧差 （精度会下降）")</code>，别再静默降级。</p>
+<p><strong>回归测试</strong>：<code>app/tests/test_probe_reader.py::HudCrop</code>，用真机帧 <code>app/tests/fixtures/probe-hud-iphone-500x1080.jpg</code> 断言能读出 <code>(375, 812)</code> / <code>340.35, 334.87</code> （修复前这条会拿到 <code>None</code>）。</p>
+<p><strong>教训</strong>：探针"不报错、只是变慢变差"是最危险的状态——它让 iPad 上的好结果掩盖了 iPhone 上的完全失效。凡是"有真值就用真值、没有就回落"的分支，回落时必须留痕。</p>
+<h3>2.9 表中间留了个洞：内点离群，随机验证看不出来（2026-10-25 实测）</h3>
+<p><strong>现象</strong>：同一台 iPad、两台 Mac 各跑一次自动校准。本机 <strong>中位 15.3 px / 最大 36.6 px</strong>， 另一台 <strong>17.3 px / 138.1 px</strong>。中位几乎一样，但两张表逐点对不上，最大差 272 px。</p>
+<p><strong>根因</strong>：<strong>内点离群</strong>——某一档只挪了一点点（或挪过头），而两侧档位都正常：</p>
+<div class="table-wrap"><table class="doc-table"><thead><tr><th>机器</th><th>坏点</th><th>本机值</th><th>正常趋势</th></tr></thead><tbody><tr><td>本机 02:36</td><td>BL x=600</td><td>0.5451（比 700 档的 0.4340 还远）</td><td>应为 ≈0.37</td></tr><tr><td>另一台 10:00</td><td>BL y=60</td><td>0.7918（比 30 档的 0.7662 还低）</td><td>应为 ≈0.745</td></tr></tbody></table></div>
+<p>旧实现（0.9.38）只剪<strong>表尾</strong>（<code>while</code> 只比较最后两档），内点原封不动进表。 <code>units_for</code> 把表按 f 排序做分段插值，于是一段区间被彻底带歪：本机那张表 <strong>tx≈0.55 的点击被算成 636 单位、实际落在 0.39，偏 246 px</strong>。</p>
+<p><strong>为什么验证没抓到</strong>：<code>validate()</code> 每角只抽 4 个随机点（共 16 个），没抽到那一段； 中位 15.3 px 完全掩盖了一个 246 px 的洞。<strong>中位误差不是表的合格证明。</strong></p>
+<p><strong>修法（2026-10-25）</strong>：<code>clean_table(points, sign)</code> —— 内点判<strong>单调性</strong>（某点和前后两档 都不同向就删该点），表尾沿用老规则。只判单调、不判斜率大小，是因为指针加速曲线本来 就不均匀（慢速档每单位位移更大），拿斜率卡会把正常档位当离群点删掉（试过，测试立刻挂了）。 修完本机 BL x <code>12 → 11</code> 档，同一批目标的最大误差 <strong>246 → 23.8 px</strong>。</p>
+<p><strong>复现性结论（两台 Mac，同一台 iPad）</strong>：</p>
+<div class="table-wrap"><table class="doc-table"><thead><tr><th>角</th><th>位移一致性</th><th>说明</th></tr></thead><tbody><tr><td>BR x / BR y</td><td><strong>4–20 px</strong> ✅</td><td>两次运行互相复现</td></tr><tr><td>BL x / BL y</td><td>272 / 54 px ❌</td><td>各自的坏点造成的，<code>clean_table</code> 后一致</td></tr><tr><td>TL x / TL y</td><td><strong>72–101 px</strong> ❌</td><td>低速档（150 单位）位移 47 vs 120 px，2.5 倍差</td></tr><tr><td>TR x / TR y</td><td>67 / 39 px</td><td>同上，越靠近顶角越明显</td></tr></tbody></table></div>
+<p>顶角低速档不可复现，是 iOS 指针加速的<strong>历史依赖</strong>（上一段移动的快慢影响这一步的增益）， 不是代码 bug——所以「换台机器再校一次」不能保证得到同样的表，这也是必须"当场测"的另一条理由。</p>
+<h3>2.10 真值 ≠ 终值：光标还在飞的时候读到的 PT 是中途位置（2026-10-25 实测）</h3>
+<p><strong>现象</strong>：两台 Mac 各跑一次 iPad 校准，都没有发送失败、没有 AirPlay 帧告警，却各自产出一个坏点。</p>
+<p><strong>排除过的原因</strong>：</p>
+<ul><li>「不同 Mac 的 AirPlay 延迟不同」→ <strong>不成立</strong>。两台实测 188 / 182 ms，而 <code>_settle()</code> = <code>max(0.55 + s/1000*0.25, 延迟+0.08)</code>，188+80=268 ms ≪ 550 ms， <strong>延迟补偿根本没启用</strong>，两台机器每一步实际等待时间完全一样。既然等待相同，结果就不可能 因延迟而分叉。</li><li>「409 重发导致多走」→ 不成立：两台校准窗口内 409 计数都是 0。</li></ul>
+<p><strong>真正原因</strong>：一次 <code>move</code> 不是"一下子到位"，而是分多条 HID 报告走完，光标要飞 <strong>300–500 ms</strong>。校准只等 0.59 s，余量 100–200 ms。把"取帧"(12 ms)和 OCR 拆开、 在<strong>精确时刻</strong>抓帧后离线识别，4 次试验里 <strong>2 次在 450 ms 读到中途位置</strong>：</p>
+<pre><code>move +150  起点 132.2   284ms:132.2   450ms:170.0   550ms:238.5   ← 450ms 是中途值
+move +150  起点 132.2   228ms:132.2   300ms:134.6   450ms:187.6   550ms:238.5</code></pre>
+<p>这正好产出两类坏点：读到中途 → 位移偏小（另一台 BL y=60「几乎没动」）； 停车动作还在飞就开始测 → 两段位移叠加、偏大（本机 BL x=600「多走 173 px」）。</p>
+<p><strong>关键认识</strong>：探针给的是<strong>真值</strong>，但真值也分终值和中途值——系统当时确实在那儿。 所以 §2.8 说的"有真值就用真值"要补一句：<strong>真值也要问对时机</strong>。探针解决的是 "帧差算错质心"，解决不了"你问得太早"。</p>
+<p><strong>修法（2026-10-25）</strong>：探针 HUD 本来就有 <code>AGE</code>（距上次 hover 事件的毫秒数）， <code>probe.py</code> 一直没解析它。现在 <code>parse_age()</code> 读出来，<code>Calibrator.settle_pointer()</code> 发现 <code>AGE &lt; 150 ms</code> 就再等 180 ms 重读，最多 3 轮：</p>
+<ul><li>停稳了就不多花时间（本机实测 0.59 s 时 AGE 已经 250–350 ms → 不触发）；</li><li>还在飞就等到停；读不到 AGE（老探针）按"已停稳"处理，保持旧行为。</li></ul>
 <h2>3. 坐标与点击</h2>
 <ul><li><strong>布局会漂移</strong>：信息 App 新建按钮实测 <code>y 0.885 → 0.935</code>；每次按最新截图取坐标。</li><li><strong><code>changed=true</code> 不代表成功</strong>：hover 只有约 90 px；真实界面变化通常 &gt; 1000 px。用 <code>min_change_px</code>（<code>click_text</code> 默认 500）。</li><li><strong>顶部 6% 是 <code>Device.changed()</code> 的盲区</strong>（避状态栏时钟）：TL/TR 停车点在 y≈3%，校准里不能用它判变化，要用 <code>_diff_pixels</code>。</li><li><strong>边缘够不到</strong>：BR/TL 停车点离边约 3–10%，<code>x&gt;0.96</code> 的按钮可能点不到；必要时换角或截图确认。</li><li><strong>底部 6% 精度下降</strong>（<code>y&gt;0.94</code>）：点控件上沿，或用键盘。</li><li><strong>圆角不可达带</strong>：iOS 把指针中心夹在圆角内，<code>x&lt;0.15 且 y&gt;0.97</code> 一带物理点不到；重试无意义。 现在有几何模型：<code>control/corners.py</code> + 实测档案 <code>control/corner_profiles.json</code> （<code>源:宽x高</code> → inset / 半径 R），<code>click</code> 会返回 <code>predicted</code> 落点供对照； 换手机/分辨率先用 <code>python control/measure_corners.py --device "…"</code> 量一份。见 §6.2。</li><li><strong>点击默认 aim=True</strong>：会先找指针纠偏，多花 1–2 s；返回里的 <code>pointer_err</code> 可判断这次准不准。 <code>pointer_err</code> 突然从个位数变成 ~110 px 说明校准表已经不对（2026-10-22 遇到过一次），别硬补偏移，重校。</li><li><strong>右键（<code>click 2</code>，固件 0.6.1+）是应用相关的</strong>：备忘录列表能弹菜单，部分第三方列表不响应。 换原生文本/列表界面验证，别拿单个 App 判断固件好坏。</li><li><strong>MCP 已暴露右键（2026-10-23 实测）</strong>：<code>click(x, y, button="right")</code> → 固件 <code>click 2</code>。 实测 N16R8 + iPhone 备忘录列表弹出「共享 / 移动 / 删除 / 置顶 / 锁定 / 复制」（<code>changed_px=14753</code>）。 注意：<strong>工具 schema 要宿主重启 MCP 进程才会出现 <code>button</code></strong>（<code>control/mcp_server.py</code> 0.3.1）。</li><li><strong>关闭上下文菜单别点看起来“空白”的地方</strong>：iOS 的菜单项是<strong>整格命中</strong>，不是点文字才生效。 2026-10-23 复核：右键备忘录列表第一条 → 菜单顶部一行三格「共享 / 移动 / 删除」（删除在<strong>右上格</strong>）， OCR 中心 <code>删除=(0.834, 0.406)</code>，面板右缘到 <code>x≈0.95</code>；当年误点的 <code>(0.88, 0.42)</code> 虽然看起来像面板右上的空白，却正好落在<strong>删除格</strong>里（该格约 <code>x 0.73–0.95, y 0.36–0.47</code>）， 所以当场删掉一条备忘录是真的（已按 §5 的“文件夹移动法”恢复）。 关闭菜单用 <strong><code>esc</code></strong>（本轮实测可关）或点<strong>远离面板</strong>的空白（如最下方 <code>y&gt;0.85</code>）； <strong>不要点面板内部/边缘的任何“空白”</strong>。</li><li><strong>aim 会误判，别迷信 <code>pointer_err≈0</code></strong>：底部区域实测实际落点比目标低约 30 px， 但 <code>pointer_err</code> 只有 1.0 px——它把界面里的灰色圆/阴影当成了指针。 <code>y&gt;0.9</code>、小图标、或同一目标连续 <code>changed=false</code> 时，把目标<strong>上移 0.02–0.03</strong> 再点，并重新截图核对。</li><li><strong>滚轮其实能用（2026-10-22 实测，iPhone iOS 18 / 内嵌网页文章）</strong>：<code>scroll N 0</code> 会让页面动， 但<strong>每份报告只走约 4–8 px</strong>（图像对齐实测：5 次 ≈ 42 px），且 <strong>N 的大小被忽略</strong> （-1 / -5 / -20 位移一样），连发才累加。好处是<strong>没有惯性</strong>，发完停 0.25 s 就能截图。 所以：整屏翻页仍用分段拖拽（<code>dy</code>）；微调走 <code>scroll(fine=N)</code>。旧文档「iOS 不认滚轮」是错的。</li><li><strong>滚轮方向与 <code>dy</code> 相反（已修）</strong>：固件 <code>scroll +N</code> 实际是「页面向下」——设置列表和内嵌网页列表 都验证过（2026-10-22 复测）。工具层已把 <code>scroll(fine=…)</code> 取反，<strong>与 <code>dy</code> 统一为「正数 = 更早/向上」</strong>。 个别表面（视频、部分 WebView）若方向相反，用 <strong>设置 → 交互 → 滚轮方向</strong> 翻转，别改代码。</li><li><strong>滚轮跟着指针走</strong>：iOS 只滚「指针下方」的滚动视图。指针停在底部工具栏/空白处时，滚轮一份报告都不生效 （实测 <code>moved_px=0</code>）；<code>scroll(fine=...)</code> 会先把指针停到屏幕中央再滚。自己发 <code>scroll</code> 命令时别忘了这步。</li><li><strong>拖拽/滚动松手前必须停住</strong>：抬手那一刻 iOS 会按最近的速度结算惯性，边走边松会被当成甩动， 页面再滑一段，截图和坐标就全偏了。<code>drag</code>/<code>scroll</code> 现在松手前停 <code>SETTLE_PAUSE</code>（<strong>1.30 s</strong>）， 并且 <code>drag</code> 先快后慢（ease-out）、末尾三小步减速（0.55 s 实测仍会被判成甩动）， 松手后先放 0.8 s，再按<strong>像素差</strong>连续 2 次无位移才截图（<code>_settle_shot</code>，最多约 3 s）。 别用字节比对——同一画面重编码后 JPEG 字节也不同，会一直等不到「相等」；自己写脚本时别省这两步。</li></ul>
 <h2>4. 校准</h2>
