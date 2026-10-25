@@ -9,12 +9,12 @@
 
 ## 最新版本
 
-**0.9.40（Build 95）** · 2026-10-25 · [Release 说明](https://github.com/jianghui1974/Quileg-HID/releases/tag/v0.9.40)
+**0.9.41（Build 96）** · 2026-10-25 · [Release 说明](https://github.com/jianghui1974/Quileg-HID/releases/tag/v0.9.41)
 
 | 安装包 | 适用机器 | SHA-256 |
 |---|---|---|
-| `Quileg-HID-0.9.40-arm64.dmg` | Apple 芯片（M1–M4） | `1737929c003b74dd2582d3a49c06d4ccbb5ab3fc24a5e42ebac52b51d7055485` |
-| `Quileg-HID-0.9.40-intel.dmg` | Intel Mac（macOS 13–26） | `88e9cd2021b8c927adb7f33f4c4f4c34f8c7d921e60c489ed0aa4a253419b405` |
+| `Quileg-HID-0.9.41-arm64.dmg` | Apple 芯片（M1–M4） | `af1f46a3ea6919bb6da70aa593801ba7503caaabc5e0f5aaeed6003a207f42c3` |
+| `Quileg-HID-0.9.41-intel.dmg` | Intel Mac（macOS 13–26） | `22743eb580c7382f48fd95f0bca8a7bbf0e36e02ccdc81420212a0bc8cf42249` |
 
 **两个包不通用**：装错会提示「需要 Apple 芯片」。包内 `VERSION.txt` 的 `Arch:` 行可以核对；
 下载后可用同 Release 中的 `.sha256` 文件校验完整性。
@@ -36,7 +36,16 @@
 
 安装包已用 Developer ID 签名、经 Apple 公证，公证票据写入包内，首次启动无需联网验证。
 
-## 0.9.40 要点
+## 0.9.41 要点
+
+- **探针不再"一次抖动判死刑"**：实测一次 OCR 抖动只持续 7–14 秒，旧规则却把探针整轮关掉；
+  现在连续读不到只会**降级**（每采样点仍试 1 次），读到立刻恢复真值。
+- **高度估算有下限**：y 表反推出 < 400 单位的整屏高度时立刻报错并提示「探针可能没启用」，
+  不用拖到顶角才用一句「停车点不在该角上」收场。
+- **失败留帧**：读不到时把那一帧存到数据目录，下次排查有物证。
+- 0.9.40 / 0.9.39 的修复全部保留。
+
+## 上一版（0.9.40）要点
 
 - **修 0.9.39 的校准崩溃**：两处日志调用漏传参数，某一档两次采样都没读到时抛 `TypeError`
   直接中止整轮；已修，并加了一条扫描源码的测试防止复发。
