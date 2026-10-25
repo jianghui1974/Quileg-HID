@@ -43,11 +43,12 @@ GUI 是常驻服务：**红叉只是隐藏窗口**，`:8890`、投屏、板子�
 连续 2–3 次失败先看 status/app_logs，再决定，不要盲目试错。
 ```
 
-## 3. 工具一览（32 个）
+## 3. 工具一览（34 个）
 
 | 类别 | 工具 |
 |---|---|
 | 诊断（只读） | `app_status`、`app_logs`、`app_diagnostics`、`status`、`video_sources`、`target_device`、`pointer_position` |
+| 版本 / 文档（只读） | `app_docs`（这一版的随包文档：清单/全文/关键词）、`app_update`（有没有新版 + 下载页） |
 | 画面 | `screenshot`、`ocr`、`orientation`、`click_text` |
 | 动作 | `click`、`long_press`、`drag`、`move`、`scroll`（`dy` 翻页 / `fine` 滚轮微调）、`type_text`、`key` |
 | 校准 | `calibration_status`、`calibration_request`、`calibration_reload` |
@@ -72,6 +73,13 @@ quileg://docs/pitfalls       踩坑库
 quileg://docs/capabilities   App 功能地图
 quileg://docs/lifecycle      常驻/退出规则
 ```
+
+没有 resources 支持的宿主用工具读同一批文件：`app_docs()` 给清单（来源/版本/`match`），
+`app_docs("AI_GUIDE.md")` 给全文，`app_docs("PITFALLS.md", query="校准")` 只给相关段落。
+
+**版本交接（0.9.45 起）**：`status` / `app_status` 里带 `app.version` 与 `docs`（文档从哪来、
+哪一版、和 App 对不对得上）以及 `notice`。`notice` 非空就说明「这一版你还没读过」或
+「App 刚升级」——先 `app_docs()`，不用等用户开口告诉你他更新了。
 
 AI 排障请先看 `app_status` → `app_logs` → `app_diagnostics`，再怀疑手机或网络。
 

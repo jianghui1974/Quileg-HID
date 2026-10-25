@@ -159,7 +159,7 @@
       <p class="connect-note">四步做完，再对 AI 说一句「手机连好了吗？」——它会逐项自检，缺什么直接告诉你。</p>
     </div>
 
-    <h3 class="ai-sub">32 个工具，分四类</h3>
+    <h3 class="ai-sub">34 个工具，分五类</h3>
     <div class="cards">
       <div class="card">
         <span class="ico" aria-hidden="true">👀</span>
@@ -289,7 +289,7 @@
   <div class="wrap">
     <div class="section-head">
       <h2>开始使用</h2>
-      <p>从零到可用，大约 30–40 分钟——其中约 13 分钟是第一次校准；只要手机、分辨率、指针大小、视频源和方向不变，之后不用再做。</p>
+      <p>从零到可用，大约 30–40 分钟——其中 15–30 分钟是第一次校准（视设备）；只要手机、分辨率、指针大小、视频源和方向不变，之后不用再做。</p>
     </div>
 
     <div class="steps">
@@ -335,12 +335,12 @@
       <div class="body">
         <p>App 启动后在本机 <code>8890</code> 端口提供 HTTP 接口，GUI、控制层和 MCP 共用同一个服务。检查它是否在运行：</p>
         <pre><code>curl -s http://127.0.0.1:8890/api/status</code></pre>
-        <p>AI 通过 MCP 工具调用它，共 32 个工具，覆盖状态查询、截图、点击、输入、滚动、拖拽、按键、校准等。工具设计成「一次一个动作」，每次动作后都要重新观察屏幕，避免盲操作。</p>
+        <p>AI 通过 MCP 工具调用它，共 34 个工具，覆盖状态查询、截图、点击、输入、滚动、拖拽、按键、校准等。工具设计成「一次一个动作」，每次动作后都要重新观察屏幕，避免盲操作。</p>
       </div>
     </details>
 
     <details>
-      <summary>校准：为什么需要 13 分钟</summary>
+      <summary>校准：为什么要 15–30 分钟</summary>
       <div class="body">
         <p>蓝牙键鼠发送的是相对位移，而 AI 需要的是「点这个按钮」。所以要先测出这块屏幕、这个分辨率下的坐标映射关系，以及整条链路的延迟。</p>
         <p>校准会测四个角的停车点、每个角的分段映射表、整条链路的延迟，并做一轮验证，生成一份按「视频源:分辨率」区分的档案（如 <code>airplay:500x1080</code>）。只有这几件事变了才需要重做：<strong>换手机、改镜像分辨率、改指针大小、换视频源（AirPlay ↔ UVC）、把手机横过来</strong>。<strong>换板子不用重做</strong>——表跟着手机走，不跟着板子走；AirPlay 和 UVC 各有一份档案，两路都用就要各校准一次。</p>
@@ -469,7 +469,7 @@
       </a>
       <a class="card doc-card" href="docs/mcp.html">
         <h3>接入 AI（MCP）</h3>
-        <p>让 Claude、Codex 等宿主调用 32 个工具。</p>
+        <p>让 Claude、Codex 等宿主调用 34 个工具。</p>
       </a>
       <a class="card doc-card" href="docs/troubleshooting.html">
         <h3>排障与兼容性</h3>

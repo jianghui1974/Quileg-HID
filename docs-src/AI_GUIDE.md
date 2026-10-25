@@ -88,7 +88,9 @@ DSH 里工具名是 `mcp__iphone__<tool>`；其他 MCP 宿主一般为 `<serverN
 | `app_status()` | **Mac App 自身**状态 | 只读；版本/模式/板子/投屏/固件/设置/日志路径 |
 | `app_logs(level, since_s, limit, grep)` | 读 App 运行日志 | 只读；已脱敏；默认最近 200 行 |
 | `app_diagnostics()` | 诊断报告 | 只读；版本、USB 端口、设置、日志尾巴，可直接贴给用户 |
-| `calibration_status()` | 校准表状态 | 只读；当前 profile、measured_at、latency、四角 refs |
+| `app_docs(name, query, offset, limit)` | **这一版的随包文档** | 只读；从已安装 App 的 `Resources/docs` 取，`app_docs()` 看清单与版本、`app_docs("PITFALLS.md", query="校准")` 只取相关段落 |
+| `app_update(refresh)` | **有没有新版** | 只读；线上最新 vs 本机、本机该下哪个 DMG、`download_page` / `repo_url`、三步升级说明。**不下载也不安装** |
+| `calibration_status()` | 校准表状态 | 只读；当前 profile、measured_at、latency、四角 refs、`calibrating`（正在跑）、`resume`（上次被打断、还剩哪几个角） |
 | `calibration_reload()` | 重载校准表 | 用户在 GUI 校准完后调用，否则本进程还是旧表 |
 | `calibration_request(reason)` | 请求用户校准 | 立即返回；GUI 弹确认，用户点「开始」才校准 |
 | `status()` | 健康检查 | 只读；`online / device / screen / calibrated / firmware / platform / video_source / ble_ready / ble{}`；服务端离线时返回 `ok:false` 而不是报错 |
@@ -254,7 +256,7 @@ refs: TL(0.0669,0.0312) TR(0.9155,0.0799) BL(0.1823,0.9722) BR(0.9267,0.9657)
 - **校准只能由用户发起**：`calibration_request(reason)` 弹确认，用户点「开始」才会跑；
   跑完必须 `calibration_reload`。**AI 不要手改 `calib.json`、不要自己补像素偏移**——
   那样只是在给错误打补丁，换一屏/换一个角落就失效。
-- 校准向导约 13 分钟；第一步会测投屏延迟（这台实测 **0.30 s**，历史设备 0.2–0.53 s），
+- 校准向导 **15–30 分钟**（视设备：今天 iPhone 500×1080 实测每档 ~17 s、19 档/角 ≈ 24 分钟）；第一步会测投屏延迟（这台实测 **0.30 s**，历史设备 0.2–0.53 s），
   后续等待不短于「延迟 + 80 ms」；延迟过高时日志会告警。
 - 缺档位/验证无有效点会中止并保留旧表，不会写半张表。
 - 校准表只有**一个权威文件**：`~/Library/Application Support/HIDBridge/calib.json`
@@ -263,9 +265,56 @@ refs: TL(0.0669,0.0312) TR(0.9155,0.0799) BL(0.1823,0.9722) BR(0.9267,0.9657)
 - 动作前会自动检查文件 mtime，变了就 reload；`calibration_status` 里的 `stale`
   表示“文件比内存新”，正常情况下应为 `false`。
 - 多个视频源/分辨率时，App 按帧头 `X-Video-Source` + 画面尺寸选 `profiles` 里对应的 `源:分辨率` 表；没有该源的表会提示，必须先校准。
-- **AI 不要自己跑校准**（13 分钟 + 全程不能碰手机 + MCP 工具 60 秒超时）。正确流程：
+- **AI 不要自己跑校准**（十几分钟 + 全程不能碰手机 + MCP 工具 60 秒超时）。正确流程：
   `calibration_status` 判断 → `calibration_request("原因")` → 用户在 GUI 点开始 →
   完成后再 `calibration_reload` → 计算器 `7+8=15` 验证。
+- **校准被打断别让用户从头跑**（0.9.44 起）：每测完一个角就落盘 `calib.wip.json`。
+  `calibration_status.resume` 非空（`done` / `pending` / `summary`）就说明「还剩几个角」，
+  直接让用户在校准向导里点「**继续校准（从 XX 开始）**」——只补剩下的角（约 5 分钟/角），
+  不要建议「重新校准」。想从零重来才点「开始校准」。
+- **先看 `calibrating`，再决定要不要劝「继续校准」**：校准正在进行时也有 `resume`
+  （`done` 为空、摘要会说「刚开头就中断了」），那是**正在跑**，不是中断。
+  `calibrating: true` 就什么都别做，等它跑完（`measured_at` 变化）。
+  （`calibrating` 要 0.9.45 起才有；在那之前的判断法：`resume.done` 为空 +
+  `updated_at` 只比"现在"早几分钟 → 大概率正在跑。）
+
+### 2.3c 提醒用户升级（0.9.45 起）——**MCP 不下载、不安装**
+
+用户不一定知道有新版。AI 只需做到「知道 + 说清楚去哪下」：
+
+1. `status.update`（或 `app_update()`）→ `{"available": true, "latest": "0.9.45",
+   "download_page": "https://github.com/jianghui1974/Quileg-HID/releases/latest",
+   "asset": {"name": "Quileg-HID-0.9.45-arm64.dmg", "size": 98_000_000}}`。
+2. 有新版就把**版本号 + 一句亮点**（`latest.notes`）告诉用户，并给出
+   `download_page`（仓库主页 `https://github.com/jianghui1974/Quileg-HID/`）；
+   顺便说清本机该下哪个文件（`asset.name`，arm64 / intel）。
+3. `how_to_upgrade` 里就是给用户的三步：打开页面下载 → 双击挂载、把「Quileg HID」拖进
+   「应用程序」（覆盖旧版）→ 装完 App 会重启。
+4. **装完一定要提醒**：投屏会断，去 iPhone/iPad 控制中心重选「屏幕镜像 → Quileg」；
+   然后调 `app_docs()` 读新版本的随包文档（`status.notice` 也会提示）。
+
+**不要**自己去下载 DMG、也不要尝试替换 `/Applications` 里的 App——这既危险又慢
+（实测直连 GitHub 只有 ~40 KB/s，见 PITFALLS §4.6）。用户点几下浏览器就好。
+
+### 2.3b 版本交接：用户升级了 App，AI 怎么知道（0.9.45 起）
+
+用户不会来告诉 AI「我更新了版本」，DMG 里的文档也常被删掉。所以 **MCP 自己说**：
+
+- `status` / `app_status` 每次都带：
+  - `app.version` / `app.build`（运行中的 App）、`docs`（文档从哪来、哪一版、`match`）、
+  - `notice`：非空就是「这一版你还没读过」或「App 在你眼皮底下升级了」。
+- `notice` 非空 → 调 `app_docs()`：
+  - `app_docs()` → 清单（来源、版本、`match`、有哪些文件）；
+  - `app_docs("RELEASE-NOTES.md")` → 这版改了什么；
+  - `app_docs("AI_GUIDE.md")` → 手册全文（超过 3 万字符会提示 `offset` 续读）；
+  - `app_docs("PITFALLS.md", query="校准")` → 只给匹配行（带行号），省钱。
+  调过一次，这一版就不再提醒；App 再升级会重新提醒，并告诉你上次读的是哪一版。
+- 文档来源优先级：**已安装 App 的 `Contents/Resources/docs`**（和当前运行的版本同源，
+  构建时写入了 `VERSION.txt` 版本戳）→ MCP 自己的包内 docs → 源码仓库根目录。
+  所以**不要**用仓库副本或旧 DMG 里的文档当"当前版本"；`docs.source` 会明说用的是哪份，
+  `docs.match=false` 说明文档和 App 版本对不上。
+- 这套机制不依赖用户说话：MCP 每 20 s 会缓存式地重新问一次 App 版本，
+  升级后第一次 `status` 就能看到 `notice`。
 
 ### 2.3a 被控设备与键盘策略
 
