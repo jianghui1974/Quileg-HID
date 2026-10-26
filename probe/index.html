@@ -56,6 +56,8 @@
     background: #fff; padding: 6px; border-radius: 4px;
     pointer-events: none;
   }
+  #ver { position: fixed; left: 12px; bottom: calc(env(safe-area-inset-bottom,0px) + 6px);
+         font-size: 10px; color: #4a4f48; pointer-events: none; }
   #blink { position: fixed; right: 12px; top: calc(env(safe-area-inset-top,0px) + 10px);
            width: 10px; height: 10px; border-radius: 50%; background: #333; }
   #blink.on { background: #3c6; }
@@ -83,6 +85,7 @@
   请点「分享 → 添加到主屏幕」，从主屏幕图标打开再校准。
 </div>
 <div id="blink"></div>
+<div id="ver">probe-web v3 · payload 7 字段</div>
 <div id="hint">
   先<b>分享 → 添加到主屏幕</b>再打开（独立窗口才能全屏、坐标才对得上）。<br>
   状态栏时钟/电池会留在顶部（网页版去不掉），HUD 已避开它。<br>
@@ -192,7 +195,9 @@
     var y = last ? Math.round(last.y * 100) / 100 : 0;
     // 没有 hover 过就给一个“很久以前”的 AGE（和原生探针的哨兵一致）
     var a = (age === null) ? 999999 : Math.round(age);
-    return 'P1,' + x + ',' + y + ',' + a + ',' + w + ',' + h;
+    // 第 7 个字段 = 视口高：宿主据此判断「贴着视口下沿的读数」是死区残值
+    var vh = Math.round(window.innerHeight);
+    return 'P1,' + x + ',' + y + ',' + a + ',' + w + ',' + h + ',' + vh;
   }
 
   function drawQr(text) {
