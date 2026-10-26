@@ -96,6 +96,11 @@
   var standalone = (window.navigator.standalone === true) ||
       (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
   if (!standalone) { document.body.classList.add('tab'); }
+  // 独立窗口里视口仍可能比屏幕矮（iOS 把底部安全区从视口扣掉了）：
+  // 那一段收不到 hover 事件，必须让用户/宿主知道。
+  var viewShort = function () {
+    return Math.abs(window.innerHeight - window.screen.height) > 8;
+  };
 
   var last = null;          // {x, y, t}
   var prevT = null;         // 上一次事件时间（算 GAP）
@@ -135,7 +140,8 @@
   window.addEventListener('resize', function () {
     drawGrid();
     sizeEl.textContent = sizeText();
-    el('view').textContent = Math.round(window.innerWidth) + ' x ' + Math.round(window.innerHeight);
+    el('view').textContent = Math.round(window.innerWidth) + ' x ' + Math.round(window.innerHeight)
+        + (viewShort() ? ' ⚠' : '');
     scaleEl.textContent = (window.devicePixelRatio || 1).toFixed(2);
   });
 
@@ -164,7 +170,8 @@
   function fmt(n, d) { return n === null || n === undefined ? '—' : n.toFixed(d); }
 
   function tick() {
-    el('view').textContent = Math.round(window.innerWidth) + ' x ' + Math.round(window.innerHeight);
+    el('view').textContent = Math.round(window.innerWidth) + ' x ' + Math.round(window.innerHeight)
+        + (viewShort() ? ' ⚠' : '');
     var now = performance.now();
     var age = last ? (now - last.t) : null;
     var active = last && age !== null && age < idleAfter;
