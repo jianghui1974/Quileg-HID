@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<title>Pointer Tester（网页版）</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pointer Tester">
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; background: #000; color: #eee;
+    overflow: hidden; position: fixed; inset: 0;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: none; overscroll-behavior: none;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  /* 网格：校准画布的参照线（不参与识别，只是让人眼看得出画面没动） */
+  #grid { position: fixed; inset: 0; pointer-events: none; opacity: .55; }
+  #hud {
+    position: fixed;
+    /* 状态栏是 black-translucent：内容铺到状态栏底下，HUD 从它下面开始 */
+    top: calc(env(safe-area-inset-top, 0px) + 10px);
+    left: 14px; width: min(92vw, 460px);
+    font-size: clamp(15px, 4.1vw, 26px); line-height: 1.45;
+    letter-spacing: .02em; pointer-events: none;
+  }
+  #hud .row { display: flex; gap: .7em; }
+  #hud .k { color: #8a8f86; min-width: 5.2em; }
+  #hud .v { color: #fff; font-weight: 600; }
+  #hud .v.dim { color: #777; font-weight: 400; }
+  #state { color: #6f6; }
+  #state.idle { color: #bbb; }
+  #hint {
+    position: fixed; left: 14px; right: 14px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+    font-size: 12px; line-height: 1.5; color: #666; pointer-events: none;
+  }
+  #hint b { color: #999; font-weight: 600; }
+  /* 就绪指示：没有任何 hover 事件时闪一下，方便判断“是不是没收到事件” */
+  #blink { position: fixed; right: 12px; top: calc(env(safe-area-inset-top,0px) + 10px);
+           width: 10px; height: 10px; border-radius: 50%; background: #333; }
+  #blink.on { background: #3c6; }
+</style>
+</head>
+<body>
+<canvas id="grid"></canvas>
+<div id="hud">
+  <div class="row"><span class="k">HOVER</span><span class="v" id="state">IDLE</span></div>
+  <div class="row"><span class="k">X</span><span class="v dim" id="x">—</span></div>
+  <div class="row"><span class="k">Y</span><span class="v dim" id="y">—</span></div>
+  <div class="row"><span class="k">PT</span><span class="v dim" id="pt">—</span></div>
+  <div class="row"><span class="k">EVT</span><span class="v dim" id="evt">—</span></div>
+  <div class="row"><span class="k">HZ</span><span class="v dim" id="hz">—</span></div>
+  <div class="row"><span class="k">GAP</span><span class="v dim" id="gap">—</span></div>
+  <div class="row"><span class="k">AGE</span><span class="v" id="age">—</span></div>
+  <div class="row"><span class="k">POINTER</span><span class="v dim" id="ptype">—</span></div>
+  <div class="row"><span class="k">SIZE</span><span class="v" id="size">—</span></div>
+  <div class="row"><span class="k">SCALE</span><span class="v" id="scale">—</span></div>
+</div>
+<div id="blink"></div>
+<div id="hint">
+  先<b>分享 → 添加到主屏幕</b>再打开（独立窗口才能全屏、坐标才对得上）。<br>
+  状态栏时钟/电池会留在顶部（网页版去不掉），HUD 已避开它。<br>
+  如果 X/Y 一直是「—」：说明这个浏览器没把指针 hover 事件交给网页。
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var el = function (id) { return document.getElementById(id); };
+  var state = el('state'), xEl = el('x'), yEl = el('y'), ptEl = el('pt'),
+      evtEl = el('evt'), hzEl = el('hz'), gapEl = el('gap'), ageEl = el('age'),
+      ptypeEl = el('ptype'), sizeEl = el('size'), scaleEl = el('scale'),
+      blink = el('blink');
+
+  var last = null;          // {x, y, t}
+  var prevT = null;         // 上一次事件时间（算 GAP）
+  var gap = null;
+  var count = 0;            // 事件总数（EVT，和原生探针一致：只用来看有没有在动）
+  var gaps = [];            // 最近 20 个 GAP，算 HZ
+  var pointerType = '—';
+  var idleAfter = 900;      // 超过这么久没有事件 → IDLE（原生探针也是这个量级）
+
+  // SIZE / SCALE：优先用屏幕点尺寸（原生探针报 375 x 812 / 3.00）
+  function sizeText() {
+    var w = Math.round(window.screen.width || window.innerWidth);
+    var h = Math.round(window.screen.height || window.innerHeight);
+    return w + ' x ' + h;
+  }
+  sizeEl.textContent = sizeText();
+  scaleEl.textContent = (window.devicePixelRatio || 1).toFixed(2);
+
+  function drawGrid() {
+    var c = el('grid'), dpr = window.devicePixelRatio || 1;
+    c.width = Math.round(window.innerWidth * dpr);
+    c.height = Math.round(window.innerHeight * dpr);
+    var g = c.getContext('2d');
+    g.scale(dpr, dpr);
+    g.clearRect(0, 0, c.width, c.height);
+    g.strokeStyle = 'rgba(120,130,120,.35)';
+    g.lineWidth = 1;
+    var step = Math.max(48, Math.round(window.innerWidth / 8));
+    for (var x = step; x < window.innerWidth; x += step) {
+      g.beginPath(); g.moveTo(x + .5, 0); g.lineTo(x + .5, window.innerHeight); g.stroke();
+    }
+    for (var y = step; y < window.innerHeight; y += step) {
+      g.beginPath(); g.moveTo(0, y + .5); g.lineTo(window.innerWidth, y + .5); g.stroke();
+    }
+  }
+  drawGrid();
+  window.addEventListener('resize', function () {
+    drawGrid();
+    sizeEl.textContent = sizeText();
+    scaleEl.textContent = (window.devicePixelRatio || 1).toFixed(2);
+  });
+
+  // 所有可能带坐标的事件都收：不同 iOS 版本给的事件类型不一样
+  function onMove(e) {
+    var x = e.clientX, y = e.clientY;
+    if (typeof x !== 'number' || typeof y !== 'number') { return; }
+    var t = (e.timeStamp || performance.now());
+    if (prevT !== null) {
+      gap = Math.max(0, t - prevT);
+      gaps.push(gap);
+      if (gaps.length > 20) { gaps.shift(); }
+    }
+    prevT = t;
+    last = { x: x, y: y, t: performance.now() };
+    count += 1;
+    pointerType = e.pointerType || (e.type.indexOf('pointer') === 0 ? '?' : 'mouse');
+    blink.classList.add('on');
+  }
+  ['pointermove', 'mousemove', 'pointerover', 'mouseover', 'pointerrawupdate']
+    .forEach(function (name) {
+      // passive: 只观察，不阻止默认行为
+      window.addEventListener(name, onMove, { passive: true });
+    });
+
+  function fmt(n, d) { return n === null || n === undefined ? '—' : n.toFixed(d); }
+
+  function tick() {
+    var now = performance.now();
+    var age = last ? (now - last.t) : null;
+    var active = last && age !== null && age < idleAfter;
+
+    state.textContent = active ? 'ACTIVE' : 'IDLE';
+    state.className = 'v' + (active ? '' : ' idle');
+    xEl.textContent = last ? (last.x / window.innerWidth).toFixed(4) : '—';
+    yEl.textContent = last ? (last.y / window.innerHeight).toFixed(4) : '—';
+    // PT 行是给宿主 OCR 读的：pt 坐标，原点左上（和原生探针同一格式）
+    ptEl.textContent = last ? (last.x.toFixed(2) + ', ' + last.y.toFixed(2)) : '—';
+    evtEl.textContent = String(count);
+    var hz = '—';
+    if (gaps.length >= 3) {
+      var sum = 0; for (var i = 0; i < gaps.length; i++) { sum += gaps[i]; }
+      var mean = sum / gaps.length;
+      hz = mean > 0 ? (1000 / mean).toFixed(1) : '—';
+    }
+    hzEl.textContent = hz;
+    gapEl.textContent = gap === null ? '—' : gap.toFixed(1) + ' ms';
+    ageEl.textContent = age === null ? '—' : Math.round(age) + ' ms';
+    ptypeEl.textContent = pointerType;
+    if (age !== null && age > 250) { blink.classList.remove('on'); }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  // Service Worker：装了主屏幕后离线也能开（file:// 或 http 下会静默失败，不影响使用）
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    });
+  }
+})();
+</script>
+</body>
+</html>
