@@ -41,6 +41,13 @@
     font-size: 12px; line-height: 1.5; color: #666; pointer-events: none;
   }
   #hint b { color: #999; font-weight: 600; }
+  #warn {
+    position: fixed; left: 0; right: 0;
+    top: calc(env(safe-area-inset-top, 0px));
+    padding: 8px 12px; background: #401a1a; color: #ffb4a8;
+    font-size: 12.5px; line-height: 1.45; display: none;
+  }
+  body.tab #warn { display: block; }
   /* 就绪指示：没有任何 hover 事件时闪一下，方便判断“是不是没收到事件” */
   #blink { position: fixed; right: 12px; top: calc(env(safe-area-inset-top,0px) + 10px);
            width: 10px; height: 10px; border-radius: 50%; background: #333; }
@@ -61,6 +68,11 @@
   <div class="row"><span class="k">POINTER</span><span class="v dim" id="ptype">—</span></div>
   <div class="row"><span class="k">SIZE</span><span class="v" id="size">—</span></div>
   <div class="row"><span class="k">SCALE</span><span class="v" id="scale">—</span></div>
+  <div class="row"><span class="k">VIEW</span><span class="v dim" id="view">—</span></div>
+</div>
+<div id="warn">
+  <b>现在不是独立窗口</b>：坐标会整体偏移（浏览器顶栏的高度），
+  请点「分享 → 添加到主屏幕」，从主屏幕图标打开再校准。
 </div>
 <div id="blink"></div>
 <div id="hint">
@@ -78,6 +90,12 @@
       evtEl = el('evt'), hzEl = el('hz'), gapEl = el('gap'), ageEl = el('age'),
       ptypeEl = el('ptype'), sizeEl = el('size'), scaleEl = el('scale'),
       blink = el('blink');
+
+  // 独立窗口（添加到主屏幕）时视口 = 整块屏幕，clientX/Y 才是屏幕坐标；
+  // 标签页模式会整体偏移一个浏览器顶栏，只能用来调试。
+  var standalone = (window.navigator.standalone === true) ||
+      (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  if (!standalone) { document.body.classList.add('tab'); }
 
   var last = null;          // {x, y, t}
   var prevT = null;         // 上一次事件时间（算 GAP）
@@ -117,6 +135,7 @@
   window.addEventListener('resize', function () {
     drawGrid();
     sizeEl.textContent = sizeText();
+    el('view').textContent = Math.round(window.innerWidth) + ' x ' + Math.round(window.innerHeight);
     scaleEl.textContent = (window.devicePixelRatio || 1).toFixed(2);
   });
 
@@ -145,6 +164,7 @@
   function fmt(n, d) { return n === null || n === undefined ? '—' : n.toFixed(d); }
 
   function tick() {
+    el('view').textContent = Math.round(window.innerWidth) + ' x ' + Math.round(window.innerHeight);
     var now = performance.now();
     var age = last ? (now - last.t) : null;
     var active = last && age !== null && age < idleAfter;
