@@ -36,7 +36,7 @@
   #state { color: #6f6; }
   #state.idle { color: #bbb; }
   #hint {
-    position: fixed; left: 14px; right: 14px;
+    position: fixed; left: 14px; right: 176px;
     bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
     font-size: 12px; line-height: 1.5; color: #666; pointer-events: none;
   }
@@ -49,6 +49,13 @@
   }
   body.tab #warn { display: block; }
   /* 就绪指示：没有任何 hover 事件时闪一下，方便判断“是不是没收到事件” */
+  #qr {
+    position: fixed; right: 14px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
+    width: 148px; height: 148px;
+    background: #fff; padding: 6px; border-radius: 4px;
+    pointer-events: none;
+  }
   #blink { position: fixed; right: 12px; top: calc(env(safe-area-inset-top,0px) + 10px);
            width: 10px; height: 10px; border-radius: 50%; background: #333; }
   #blink.on { background: #3c6; }
@@ -56,6 +63,7 @@
 </head>
 <body>
 <canvas id="grid"></canvas>
+<canvas id="qr" width="296" height="296"></canvas>
 <div id="hud">
   <div class="row"><span class="k">HOVER</span><span class="v" id="state">IDLE</span></div>
   <div class="row"><span class="k">X</span><span class="v dim" id="x">—</span></div>
@@ -84,6 +92,7 @@
   <b>校准</b>请用原生 App（它没有这条死区）。
 </div>
 
+<script src="vendor/qrcode.js"></script>
 <script>
 (function () {
   'use strict';
@@ -172,6 +181,46 @@
 
   function fmt(n, d) { return n === null || n === undefined ? '—' : n.toFixed(d); }
 
+  // ---- 二维码（宿主的快路径：整帧解 QR，不用 OCR） ----
+  var qrCanvas = el('qr'), qrCtx = qrCanvas.getContext('2d');
+  var lastQrAt = 0, lastQrText = '';
+
+  function payloadText(age) {
+    var w = Math.round(window.screen.width || window.innerWidth);
+    var h = Math.round(window.screen.height || window.innerHeight);
+    var x = last ? Math.round(last.x * 100) / 100 : 0;
+    var y = last ? Math.round(last.y * 100) / 100 : 0;
+    // 没有 hover 过就给一个“很久以前”的 AGE（和原生探针的哨兵一致）
+    var a = (age === null) ? 999999 : Math.round(age);
+    return 'P1,' + x + ',' + y + ',' + a + ',' + w + ',' + h;
+  }
+
+  function drawQr(text) {
+    if (text === lastQrText) { return; }
+    var qr;
+    try {
+      qr = qrcode(0, 'L');
+      qr.addData(text);
+      qr.make();
+    } catch (e) {
+      return;
+    }
+    lastQrText = text;
+    var n = qr.getModuleCount();
+    var scale = Math.floor(qrCanvas.width / (n + 2));
+    var pad = Math.floor((qrCanvas.width - n * scale) / 2);
+    qrCtx.fillStyle = '#fff';
+    qrCtx.fillRect(0, 0, qrCanvas.width, qrCanvas.height);
+    qrCtx.fillStyle = '#000';
+    for (var y = 0; y < n; y++) {
+      for (var x = 0; x < n; x++) {
+        if (qr.isDark(y, x)) {
+          qrCtx.fillRect(pad + x * scale, pad + y * scale, scale, scale);
+        }
+      }
+    }
+  }
+
   function tick() {
     el('view').textContent = Math.round(window.innerWidth) + ' x ' + Math.round(window.innerHeight)
         + (viewShort() ? ' ⚠' : '');
@@ -196,6 +245,10 @@
     gapEl.textContent = gap === null ? '—' : gap.toFixed(1) + ' ms';
     ageEl.textContent = age === null ? '—' : Math.round(age) + ' ms';
     ptypeEl.textContent = pointerType;
+    if (now - lastQrAt > 80) {
+      lastQrAt = now;
+      drawQr(payloadText(age));
+    }
     if (age !== null && age > 250) { blink.classList.remove('on'); }
     requestAnimationFrame(tick);
   }
