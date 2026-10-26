@@ -243,6 +243,8 @@ section { padding: 64px 0; }
 
 /* ---------- cards ---------- */
 
+.nw { white-space: nowrap; }
+
 .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
 
 .card {
