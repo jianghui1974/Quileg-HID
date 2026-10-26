@@ -1,5 +1,5 @@
 // 极简缓存：首页 + 图标 + 二维码库。探针是纯静态页，离线必须能开。
-const CACHE = 'pointer-tester-v2';
+const CACHE = 'pointer-tester-v3';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './vendor/qrcode.js',
                 './icon-180.png', './icon-512.png'];
 self.addEventListener('install', (e) => {
