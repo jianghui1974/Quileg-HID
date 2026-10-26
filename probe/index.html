@@ -37,7 +37,7 @@
   #state.idle { color: #bbb; }
   #hint {
     position: fixed; left: 14px; right: 176px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 26px);
     font-size: 12px; line-height: 1.5; color: #666; pointer-events: none;
   }
   #hint b { color: #999; font-weight: 600; }
@@ -56,8 +56,12 @@
     background: #fff; padding: 6px; border-radius: 4px;
     pointer-events: none;
   }
-  #ver { position: fixed; left: 12px; bottom: calc(env(safe-area-inset-bottom,0px) + 6px);
-         font-size: 10px; color: #4a4f48; pointer-events: none; }
+  #ver {
+    position: fixed; left: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 6px);
+    font-size: 10px; line-height: 1.2; padding: 2px 6px; border-radius: 3px;
+    background: #000; color: #555; pointer-events: none; z-index: 3;
+    box-shadow: 0 0 0 1px #1a1a1a;
+  }
   #blink { position: fixed; right: 12px; top: calc(env(safe-area-inset-top,0px) + 10px);
            width: 10px; height: 10px; border-radius: 50%; background: #333; }
   #blink.on { background: #3c6; }
@@ -85,7 +89,7 @@
   请点「分享 → 添加到主屏幕」，从主屏幕图标打开再校准。
 </div>
 <div id="blink"></div>
-<div id="ver">probe-web v3 · payload 7 字段</div>
+<div id="ver">probe-web v4 · payload 7 字段</div>
 <div id="hint">
   先<b>分享 → 添加到主屏幕</b>再打开（独立窗口才能全屏、坐标才对得上）。<br>
   状态栏时钟/电池会留在顶部（网页版去不掉），HUD 已避开它。<br>
