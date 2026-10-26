@@ -89,7 +89,7 @@
   请点「分享 → 添加到主屏幕」，从主屏幕图标打开再校准。
 </div>
 <div id="blink"></div>
-<div id="ver">probe-web v4 · payload 7 字段</div>
+<div id="ver">probe-web v5 · payload 7 字段</div>
 <div id="hint">
   先<b>分享 → 添加到主屏幕</b>再打开（独立窗口才能全屏、坐标才对得上）。<br>
   状态栏时钟/电池会留在顶部（网页版去不掉），HUD 已避开它。<br>
@@ -129,11 +129,18 @@
   var pointerType = '—';
   var idleAfter = 900;      // 超过这么久没有事件 → IDLE（原生探针也是这个量级）
 
-  // SIZE / SCALE：优先用屏幕点尺寸（原生探针报 375 x 812 / 3.00）
+  // 屏幕点尺寸：**按当前方向**取。iPad 横屏实测 `screen.width/height` 仍是竖屏的
+  // 820x1180，而视口是 1180x788 —— 直接用会把载荷里的 w/h 写反（x 被除小 1.44 倍）。
+  function screenSize() {
+    var sw = Math.round(window.screen.width || window.innerWidth);
+    var sh = Math.round(window.screen.height || window.innerHeight);
+    var landscape = window.innerWidth > window.innerHeight;
+    var big = Math.max(sw, sh), small = Math.min(sw, sh);
+    return landscape ? [big, small] : [small, big];
+  }
   function sizeText() {
-    var w = Math.round(window.screen.width || window.innerWidth);
-    var h = Math.round(window.screen.height || window.innerHeight);
-    return w + ' x ' + h;
+    var size = screenSize();
+    return size[0] + ' x ' + size[1];
   }
   sizeEl.textContent = sizeText();
   scaleEl.textContent = (window.devicePixelRatio || 1).toFixed(2);
@@ -156,6 +163,7 @@
     }
   }
   drawGrid();
+  window.addEventListener('orientationchange', function () { sizeEl.textContent = sizeText(); });
   window.addEventListener('resize', function () {
     drawGrid();
     sizeEl.textContent = sizeText();
@@ -193,8 +201,8 @@
   var lastQrAt = 0, lastQrText = '';
 
   function payloadText(age) {
-    var w = Math.round(window.screen.width || window.innerWidth);
-    var h = Math.round(window.screen.height || window.innerHeight);
+    var size = screenSize();
+    var w = size[0], h = size[1];
     var x = last ? Math.round(last.x * 100) / 100 : 0;
     var y = last ? Math.round(last.y * 100) / 100 : 0;
     // 没有 hover 过就给一个“很久以前”的 AGE（和原生探针的哨兵一致）
