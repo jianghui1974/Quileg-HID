@@ -9,12 +9,12 @@
 
 ## 最新版本
 
-**0.9.53（Build 108）** · 2026-10-27 · [Release 说明](https://github.com/jianghui1974/Quileg-HID/releases/tag/v0.9.53)
+**0.9.56（Build 111）** · 2026-10-27 · [Release 说明](https://github.com/jianghui1974/Quileg-HID/releases/tag/v0.9.56)
 
 | 安装包 | 适用机器 | SHA-256 |
 |---|---|---|
-| `Quileg-HID-0.9.53-arm64.dmg` | Apple 芯片（M1–M4） | `163cbfbc41e81fd3628e3d6eb34b96f2753865d6b2482e572c7eb0766755840f` |
-| `Quileg-HID-0.9.53-intel.dmg` | Intel Mac（macOS 13–26） | `034a39843b8fc401a942a7d37aaaca820fc8a1b85849a2c960fc7624dfa59c00` |
+| `Quileg-HID-0.9.56-arm64.dmg` | Apple 芯片（M1–M4） | `a0335588263f55add46dc19d381afc20f3028cf36bef4539e7bef8e379be5cb4` |
+| `Quileg-HID-0.9.56-intel.dmg` | Intel Mac（macOS 13–26） | `9a8251b433c17e5b9c49ae58142c4fb9d04de180ee7f3b72f99959843dcbdb4c` |
 
 **两个包不通用**：装错会提示「需要 Apple 芯片」。包内 `VERSION.txt` 的 `Arch:` 行可以核对；
 下载后可用同 Release 中的 `.sha256` 文件校验完整性。
@@ -35,6 +35,19 @@
 3. 按 App 内引导刷固件、投屏，再决定要不要校准：**校准是可选的**（15–30 分钟，视设备）——不做也能用，AI 会走视觉闭环，只是每次动作慢几秒、精度粗一些；做过之后一次开出、最准。只要不改手机、分辨率、指针大小、视频源和方向，一张表可以一直用。
 
 安装包已用 Developer ID 签名、经 Apple 公证，公证票据写入包内，首次启动无需联网验证。
+
+## 0.9.56 要点
+
+- **动作后不再「假没变」**：投屏帧的时间戳是「到达时间」，内容还压在管线里 0.2–0.5 s。
+  现在 click / key 会**等画面内容真的变了**再等转场结束，`changed` 不再把成功判成失败
+  （此前 `click_text` 会因为「没变化」双击图标）；另加 `changed_any_px`，
+  顶部工具栏（Safari 的「+」在 y≈0.07）的动作不会被「跳过顶部 6%」判成没变。
+- **iPad 顶部工具栏点得到**：TR 停车点 0.117 之上原本点不到，现在把停车点临时抬高
+  （按 y 表第一段斜率 + 量一次落点），实测偏 12 px；钳位/近似都写进返回值。
+- **程序坞看得见**：`dock_visible` / `dock_band_px` —— 归位时指针压到底边会拉起程序坞，
+  现在比「屏幕最下面那一条」就能知道，AI 不会再把系统 UI 当成 App 内容。
+- **平板表单不再「看起来没问题」**：`calibration_status` 会直接说「底部 17% 是程序坞带，点不到」。
+- `500` 条单元测试；arm64 与 intel 两个包均签名 + 公证 + staple。
 
 ## 0.9.53 要点
 
