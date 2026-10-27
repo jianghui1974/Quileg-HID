@@ -119,7 +119,7 @@ DSH 里工具名是 `mcp__iphone__<tool>`；其他 MCP 宿主一般为 `<serverN
 | `select_video(source)` | 切换视频源 | **手动**选 `airplay` / `uvc`，没有自动切换；每路都在跑、各自有状态 |
 | `monitor_videos(on)` | 多路监控视图 | 只是把各路画面并排显示，不改变当前选中的源 |
 | `screenshot(grid=False, source="auto")` | 看当前画面（`auto`=当前源） | 返回 JPEG；UVC 为 888×1920，AirPlay 为 500×1080；`grid=true` 叠加 10×10 网格 |
-| `ocr(min_confidence=0.3, languages="", source="auto")` | 识别屏幕文字（`auto`=当前源） | 返回 `blocks[]`：`text / confidence / bbox / center`，全部归一化 0..1，可直接 `click(center)`；高分辨率帧会在内部缩放后再识别 |
+| `ocr(min_confidence=0.3, languages="", source="auto")` | 识别屏幕文字（`auto`=当前源） | 返回 `blocks[]`：`text / confidence / bbox / center`，全部归一化 0..1，可直接 `click(center)`；高分辨率帧会在内部缩放后再识别。另带 `engine`（`accurate`/`fast`）与 `degraded`：为 true 是**引擎降级**，不是图里没字（见 PITFALLS §2.28） |
 | `click_text(text, exact=False, dy=0, attempts=2)` | OCR 找到文字并点击 | 自动在 `dy-0.055` 重试一次；找不到时**返回候选文字**（不抛异常），`changed_px >= 500` 才算命中 |
 | `click(x, y, aim=True, button="left")` | 点击 | 默认先找指针纠偏再点，返回 `pointer_err` / `corrected`；有圆角档案时还返回 `predicted`（模型落点）；`aim=False` 更快但不纠偏；`button="right"` 发右键（`click 2`），**上下文菜单是应用相关的**（备忘录列表有，部分第三方列表没有） |
 | `long_press(x, y, ms=800)` | 长按 | 用于选中文本、上下文菜单；`ms` 200–5000 |
@@ -185,6 +185,45 @@ DSH 里工具名是 `mcp__iphone__<tool>`；其他 MCP 宿主一般为 `<serverN
 
 每次点击/拖动/输入都要看返回的截图。不要连续发一串 click 再检查；设备一次动作 4–7 秒，
 中间可能被动画、键盘、分享面板或系统弹窗打断。
+
+### 1.1a 两种控制区模式：`guard`（防误触）/ `open`（开放）
+
+屏幕最底下和顶边那两条带子里，有些区域是**系统手势区**（iPad 底部程序坞带 ≈11%、
+顶部安全边 2%）。它们不是 App 内容，点进去可能命中程序坞、主屏条、通知中心。
+
+`click` / `move` 用 `mode` 自己选：
+
+| 模式 | 行为 | 什么时候用 |
+|---|---|---|
+| `mode="guard"`（默认，防误触） | 钳到停车点，返回 `clamped=true` + `effective`（实际落点），摘要提醒 | 日常操作；宁可点不中，也不要误触程序坞 |
+| `mode="open"`（开放） | 不钳位（底部最多 98.5%），返回 `forced=true`，摘要写「后果自负」 | 目标**确实**压在最底部、guard 下 `clamped=true` 反复落空时 |
+
+判断顺序：先 `click(...)`（guard）→ 看 `clamped` / `effective` 与截图 → 确实被钳住再
+`mode="open"` 重试一次；开放模式仍没反应，多半是命中了程序坞（看 `dock_visible`），
+别再连点。`status.zones` 里也写着这两句，随时可查。
+
+### 1.1b 时间维度 OCR：`ocr_timeline`（0.9.57 起）
+
+单帧 `ocr()` 只回答「这一帧有什么字」，回答不了「刚出现 / 正在动 / 已经稳了多久」。
+`ocr_timeline(window_ms=1000, samples=6, fast=False)` 在窗口内采几帧、**只做缩略图差分**，
+再对最后一帧做一次 OCR，于是每个块多三个字段：
+
+| 字段 | 含义 | 怎么用 |
+|---|---|---|
+| `dirty` | 窗口内这块区域动过多少（0..1） | ≥0.15 就是「还在动」，别点 |
+| `stable_ms` | 最近一次动过之后稳了多久 | ≥400 ms 才值得点 |
+| `trust` | `stable` / `settling` / `moving` / `unsure` | 优先只信 `stable` |
+
+页面级还有 `motion_pct[]`（每个区间的运动面积）、`moving_now`、`busy_pct`、`blank_ratio`、`blank`
+（`blank=true` = 正文带没有文字：白屏/加载中/空页）、`ocr_reused`（复用了上次识别）。
+
+- `fast=True`：300 ms 窗口，静态页 **≈0.3 s**（完整版 ≈1.8 s），内容一变自动重新识别；
+- 判断顺序：拿不准页面稳不稳 → `ocr_timeline(fast=True)` → 只点 `trust=stable` 的块；
+  `blank=true` 时不要把这些字当页面内容，先等/刷新；
+- 它回答「**现在能不能点**」，不回答「刚才点成了没有」（后者看 `click` 的 `changed/fresh`）。
+
+配合同一天加的 `type_text` 契约：打完字会等画面稳定再截图（返回 `changed/fresh`），
+并自动把拼音输入法切到英文（`ime_switched=true`）。
 
 ### 1.2 `changed` 不是“任务成功”
 
@@ -688,6 +727,8 @@ AI 自己生成的 wav/mp3 也能直接播（≤8 MB 可 base64 上传）。同�
 | 换了新 iPhone/iPad 后点击系统性偏 | 校准表是上一台的 | 重跑校准向导；不要用偏移量硬补 |
 | `status` 正常但 `screenshot` 很慢/超时 | 投屏卡住或 App 在前台切横屏 | 等 2 s 再截；仍不行请人重开「屏幕镜像」 |
 | 删字后再输入，文字跑到前面 | 退格只删字符不移动光标 | 先 `⌘→` 回行尾（多行用 `⌘↓`）再输入 |
+| `ocr()` 结果里 `degraded: true`、中文乱码、block 数明显变少 | `.accurate` 走 ANE，被沙箱 / 缺缓存 / Intel 掐掉了，helper 退到 `.fast` | **别当成「图里没字」**：先看 `degraded_reason`；换非受限终端复跑 `ocr-text`；不要重签名/重装。见 PITFALLS §2.28 |
+| `ocr()` 卡满 30 s 报超时 | 同上，且 `~/Library/Caches/vision_*` 缺失时 `.accurate` 会卡在模型编译 | 看 App 日志有没有降级告警；请人在 GUI 里跑一次 OCR；仍不行查缓存目录权限 |
 
 ### 5.1 不要做的事
 
@@ -828,6 +869,9 @@ AI 自己生成的 wav/mp3 也能直接播（≤8 MB 可 base64 上传）。同�
 | 2026-10-23 | `drag`/`scroll` 防甩动加强：停顿 0.55 → **1.30 s**，`drag` 改 ease-out + 末尾三小步、`scroll` 12 步 + 两小步收尾；操作员实测 0.5 屏拖拽由滑 0.55–0.60 屏降到 0.42 屏且 2 s 后位置不变 |
 | 2026-10-22 | `scroll`/`drag` 防甩动：松手前停顿 0.55 s（`SETTLE_PAUSE`）；松手后先放 0.8 s，再按像素差连续 2 次无位移才截图（`_settle_shot`）。单次滚动因此多 1.5–3 s |
 | 2026-10-23 | **更正**「部分字符永不落屏」的根因：不是 HID 键位状态，而是 iPhone 的 `辅助触控 → 指针设备 → 鼠标键 → 使用主键盘` 被打开（键盘变鼠标，回车弹菜单）；关掉即恢复。另补「辅助触控必须开，否则没有指针」；PITFALLS §0/§2.1、§0.1 基线、§5 故障表同步 |
+| 2026-10-27 | 0.9.57–0.9.60：新增 §1.1b 时间维度 OCR（`ocr_timeline` / `blank` / fast）、`type_text` 等稳定 + 输入法让路 |
+| 2026-10-27 | 0.9.61/0.9.62：新增 §1.1a 两种控制区模式（`guard` 防误触 / `open` 开放）；`click`/`move` 参数错误改为结构化返回（不再抛异常）；`ocr_timeline` 时间维度 OCR；`type_text` 等稳定再截图 + 输入法自动切英文 |
+| 2026-10-27 | 0.9.63：OCR 结果带 `engine` / `degraded` / `degraded_reason`；`.accurate` 失败先重试一次再退 `.fast`；MCP 摘要与 GUI 日志都会报降级；§5 加两条故障项，PITFALLS 新增 §2.28（**重签名不是原因**，是 ANE / mach-lookup 被掐） |
 | 2026-10-26 | 0.9.47：档案加 `form`（phone/tablet）。iPhone 不再「底部锚定 + 上抬停车点」（底部 22% 不可达，PITFALLS §2.20）；`calibration_status` 增 `y_reach`/`warnings`；§2.2 与 §5 故障表同步 |
 | 2026-10-23 | §4.11 按真机实测重写：**双击 Control（间隔约 60 ms）开始 / 单击停止**（需 `听写快捷键=Control`）；转写延迟 **1.5–3 s**，首帧只有一半，验收要等 2–3 s；暂停态照常收音；Spotlight 搜索框不落字；F5 无效 |
 
