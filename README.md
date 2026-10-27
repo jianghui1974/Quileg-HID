@@ -9,12 +9,12 @@
 
 ## 最新版本
 
-**0.9.59（Build 114）** · 2026-10-27 · [Release 说明](https://github.com/jianghui1974/Quileg-HID/releases/tag/v0.9.59)
+**0.9.60（Build 115）** · 2026-10-27 · [Release 说明](https://github.com/jianghui1974/Quileg-HID/releases/tag/v0.9.60)
 
 | 安装包 | 适用机器 | SHA-256 |
 |---|---|---|
-| `Quileg-HID-0.9.59-arm64.dmg` | Apple 芯片（M1–M4） | `9b8a42f0006eb4924d01e8ffda6cea021fb74122d453db373926a56ee289f406` |
-| `Quileg-HID-0.9.59-intel.dmg` | Intel Mac（macOS 13–26） | `abf46afa165cc9fcbef1f85397ef692ce2b0da0741fd88b5b3ae22d8b0411848` |
+| `Quileg-HID-0.9.60-arm64.dmg` | Apple 芯片（M1–M4） | `968c046634dc9a3feb30945448472500c805e5621e549bedbbbc63373028170f` |
+| `Quileg-HID-0.9.60-intel.dmg` | Intel Mac（macOS 13–26） | `98ea07283e123257cb1ea0f6a1568157e7fddb23b87bd83926036ca7b9a6604b` |
 
 **两个包不通用**：装错会提示「需要 Apple 芯片」。包内 `VERSION.txt` 的 `Arch:` 行可以核对；
 下载后可用同 Release 中的 `.sha256` 文件校验完整性。
@@ -35,6 +35,11 @@
 3. 按 App 内引导刷固件、投屏，再决定要不要校准：**校准是可选的**（15–30 分钟，视设备）——不做也能用，AI 会走视觉闭环，只是每次动作慢几秒、精度粗一些；做过之后一次开出、最准。只要不改手机、分辨率、指针大小、视频源和方向，一张表可以一直用。
 
 安装包已用 Developer ID 签名、经 Apple 公证，公证票据写入包内，首次启动无需联网验证。
+
+## 0.9.60 要点
+
+- **空白判据只看正文带**（y 10%–90%）：空笔记/白屏才报 `blank`，备忘录里写一行字不会被误判
+  （0.9.59 两次误伤：稀疏页面、工具栏文字）。
 
 ## 0.9.59 要点
 
