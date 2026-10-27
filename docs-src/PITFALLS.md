@@ -739,7 +739,8 @@ y 表到底 / 平板仍让开程序坞带 / 闸门）；`test_move_clamp.py` 补
 
 **边界（别过度承诺）**：拖拽/滚动/长按中途停不下来，视觉模式下只是「能用但更慢更粗」；
 帧差找指针本身有已知盲区（hover 只有 ~90 px、画面里的灰圆会被误判成指针）。
-要稳定精度还是两件事：**Pointer Tester 探针**（真值读点）或**一张表**。
+要稳定精度还是两件事：**Pointer Tester 探针**（真值读点，[TestFlight 装一个](https://testflight.apple.com/join/zAXDqJsX)，iOS 17+）
+或**一张表**。
 
 **教训**：一个能力被写成「前置条件」，就等于给自己加了一维无限的适配矩阵；
 写成「可选 + 诚实降级」，适配成本才回到可控。文档里的「必须先 X」要定期回看——
@@ -772,6 +773,10 @@ y 表到底 / 平板仍让开程序坞带 / 闸门）；`test_move_clamp.py` 补
 都要在语义层补一次验证（落点、画面、覆盖率），而不是指望 ACK。
 
 ### 2.23 Pointer Tester 网页版：能当探针，但底部 6% 是死的（2026-10-26 实测）
+
+> **怎么装**：原生版走 TestFlight 外部测试 <https://testflight.apple.com/join/zAXDqJsX>（已过 Apple 审核，iOS 17+；不联网、
+> 不申请权限，只显示坐标、不移动指针）；网页版 <https://jianghui1974.github.io/Quileg-HID/probe/> 打开即用。
+> iPhone 上整张分段表只有原生版量得出来 —— 原因就是下面第 2 条。
 
 **做法**：把探针做成 PWA（`pointer-tester/web/`，托管在
 `https://jianghui1974.github.io/Quileg-HID/probe/`），分享 → 添加到主屏幕 → 独立窗口打开。
