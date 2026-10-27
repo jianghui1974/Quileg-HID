@@ -9,12 +9,12 @@
 
 ## 最新版本
 
-**0.9.56（Build 111）** · 2026-10-27 · [Release 说明](https://github.com/jianghui1974/Quileg-HID/releases/tag/v0.9.56)
+**0.9.58（Build 113）** · 2026-10-27 · [Release 说明](https://github.com/jianghui1974/Quileg-HID/releases/tag/v0.9.58)
 
 | 安装包 | 适用机器 | SHA-256 |
 |---|---|---|
-| `Quileg-HID-0.9.56-arm64.dmg` | Apple 芯片（M1–M4） | `a0335588263f55add46dc19d381afc20f3028cf36bef4539e7bef8e379be5cb4` |
-| `Quileg-HID-0.9.56-intel.dmg` | Intel Mac（macOS 13–26） | `9a8251b433c17e5b9c49ae58142c4fb9d04de180ee7f3b72f99959843dcbdb4c` |
+| `Quileg-HID-0.9.58-arm64.dmg` | Apple 芯片（M1–M4） | `9fa2a35eececaa19244545484a7558bff4b496fd8375c74c900709b6ef9d0205` |
+| `Quileg-HID-0.9.58-intel.dmg` | Intel Mac（macOS 13–26） | `d139218aacd4de6b54a9ed4c00cf67e488091fb1ab0d66c1cf21c7163bc06e56` |
 
 **两个包不通用**：装错会提示「需要 Apple 芯片」。包内 `VERSION.txt` 的 `Arch:` 行可以核对；
 下载后可用同 Release 中的 `.sha256` 文件校验完整性。
@@ -35,6 +35,16 @@
 3. 按 App 内引导刷固件、投屏，再决定要不要校准：**校准是可选的**（15–30 分钟，视设备）——不做也能用，AI 会走视觉闭环，只是每次动作慢几秒、精度粗一些；做过之后一次开出、最准。只要不改手机、分辨率、指针大小、视频源和方向，一张表可以一直用。
 
 安装包已用 Developer ID 签名、经 Apple 公证，公证票据写入包内，首次启动无需联网验证。
+
+## 0.9.58 要点
+
+- **打字看得见了**：`type_text` 打完字等画面稳定再截图（此前 16 个字符只返回 "Dai"，
+  AI 会以为丢字再打一遍），并回报 `changed / fresh / frame_age_ms`。
+- **中文输入法自动让路**：打字前 OCR 底部输入法栏，检测到拼音（「拼」/≥2 个汉字块）
+  就先 `ctrl+space` 切英文——此前 `settled check 1111` 会变成 `settle的 check1111`。
+- **白屏/加载中有信号**：`ocr_timeline` 的 `page.blank`（均匀度 ≥92% 且文字 ≤8 块）。
+- `ocr_timeline` 新增时间维度 OCR（`dirty / stable_ms / trust`）与 fast 模式（静态页 0.27 s）。
+- `518` 条单元测试；arm64 与 intel 两个包均签名 + 公证 + staple。
 
 ## 0.9.56 要点
 
