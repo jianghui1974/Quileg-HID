@@ -19,6 +19,15 @@
 **两个包不通用**：装错会提示「需要 Apple 芯片」。包内 `VERSION.txt` 的 `Arch:` 行可以核对；
 下载后可用同 Release 中的 `.sha256` 文件校验完整性。
 
+## 配套：Pointer Tester（可选）
+
+校准与排障时读取指针真值的 iOS App；不装也能用 Quileg HID。
+
+- **原生版**：[TestFlight 外部测试](https://testflight.apple.com/join/zAXDqJsX)（已通过 Apple 审核，公开链接可直接加入；iOS 17+，不联网、不申请权限，只显示坐标）
+- **网页版**：[打开即用](https://jianghui1974.github.io/Quileg-HID/probe/)（免安装；iPhone 上最底部一条收不到指针事件）
+
+整张分段表只有原生版量得出来。[官网说明](https://jianghui1974.github.io/Quileg-HID/#probe)
+
 ## 要求
 
 | 项 | 要求 |
