@@ -848,6 +848,183 @@ PyInstaller 把模块冻进包里后 `__file__` 指向包内，这个路径落�
 凡是这种 `except: return {}` 的地方，都要有一个「在冻结点也能找到」的路径，并且至少
 在日志里留一句——否则它只会在你最需要兜底的那一刻消失。
 
+### 2.25 往弹窗正文里加卡片 → 底部按钮被裁到窗口外（2026-10-26 实测，0.9.52 回归）
+
+**现象**（用户现场）：校准向导里**看不到「开始校准」**。窗口右下角只剩半截分割线，
+拖不动、也没法滚动；只能点右上角关闭。0.9.52 之前是好的。
+
+**根因（三条叠在一起）**：
+
+1. `CalibrationDialog` 的窗口高度写死 `min(760, int(700 × fonts.scale))`（`dialogs.py`），
+   而 0.9.52 在正文里加了「探针工具（免安装）」卡片 ≈ **100 px**；
+2. `_footer_bar()` 在正文**之后** `pack`：Tk 按顺序分配空间，窗口不够高时
+   **最后 pack 的那个被挤出窗口**——正好是动作栏；
+3. 正文里 `tk.Text` 没写 `width`，Tk 默认按 **80 字符**要宽（≈800 px）——一旦按内容定宽，
+   窗口会被撑到 970 px 宽。
+
+**实测数据**（`artifacts/2026-10-26-calib-wizard-fix-*.png`，模块级脚本量 `winfo_rooty`）：
+
+| UI 缩放 | 修前窗口 | 内容需要 | 「开始校准」底边 | 被裁 |
+|---|---|---|---|---|
+| 1.0 | 640×700 | 801×777 | 772 > 700 | **72 px** |
+| 1.3 | 720×760 | 1015×991 | 986 > 760 | **226 px** |
+
+**修法**：
+
+- 动作栏改成 `_footer_bar(..., side="bottom")` 并在正文**之前** pack —— 先占住底边，
+  窗口不够高时被压的是弹性的日志区，按钮永远在窗口里；
+- `_fit_and_center()`：窗口高度按 `winfo_reqheight()` 定（下限仍是 700），上限 `屏幕高 − 120`；
+  还塞不下就把日志从 7 行往下缩（最少 3 行）；
+- 正文折行宽度跟着窗口宽度走（`_apply_wrap`），扣掉外框/内边距约 92 px ——
+  写死 560 时 UI 放大后每行都留一截空档，多出来的行正好把日志挤没；
+- `Text(width=1)`：宽度交给 `pack(fill="x")`，避免默认 80 字符把窗口撑宽；
+- 顺带：「地址已复制」并到按钮同一行、URL 折行上限，省掉两行高度。
+
+**教训**：
+
+- **弹窗里加内容，先问「窗口高度是写死的吗」**。写死 + `pack` 顺序 = 后加的东西把按钮顶出去，
+  而且**没有任何报错**，用户只会说"按钮不见了"。
+- 动作栏要**先 pack**（`side="bottom"`），让弹性区（日志/列表）承担压缩；
+  反过来做，压缩的永远是最后一个 pack 的控件。
+- 「按内容定高」一旦开了口，就得同时管住**宽**：`Text` / 长 URL / 未折行的 Label 都会
+  反向把窗口撑大（本例 640 → 970）。
+
+> 回归：`app/tests/test_calib_dialog_layout.py`（4 条，真 Tk 建窗量几何，1.0 / 1.15 / 1.3 三档 +
+> 「窗口要装得下正文」）；无窗口服务器时自动 skip。全套 **488 passed**。
+
+### 2.26 动作后的截图晚一整步：AI 会把「已生效」当成「没生效」（2026-10-27 实测，0.9.54）
+
+**现象**（iPad 真人流程）：按 Esc 关掉 Spotlight —— 返回的截图里 Spotlight 还在；
+敲退格删掉字符 —— 返回的截图里字符还在选中。AI 判「没生效」，又按了一次：**真多删了一个字**。
+同一轮里 ⌘Tab / ⌘H / ⌘Space 都被判成「不支持」，其实都生效了。
+
+**根因**：AirPlay 只在画面变化时发帧。`click_verified()` 的动作是：
+`before = frame()` → 发 `click` → `wait_stable()` → `after = frame()`。
+动作刚发出时，`frame()` 拿到的仍是动作前那一帧；`wait_stable()` 看到「两帧一样」就判
+「稳定」，于是 `after` 就是 `before` → `changed_px=0`。**「没有新帧」被当成了「没有变化」。**
+
+**修法（0.9.54）**
+
+- 服务端 `/api/frame.jpg` 回 `X-Frame-Age-Ms` / `X-Frame-Time`（帧的真实时间）；
+- 客户端 `_fresh_after(before, since)`：等到**时间戳比动作前新**的帧才返回，超时才认输并
+  标记 `fresh=false`；老服务端没有时间戳时立刻返回（不白等 1.3 s）；
+- `click` / `key` 返回 `fresh` / `frame_age_ms`，摘要分三种情况写：
+  画面有变化 / 新帧到了但没变化 / 没等到新帧；
+- 取基准帧前先 `wait_stable()`，避开程序坞弹出/收起动画（它也会被算成「画面变了」）。
+
+**教训**：**「没等到证据」和「证据说没有」是两件事。** 所有「等一会儿再判断」的代码，
+都要能区分「超时」与「确认」。
+
+> **0.9.54 的补丁（0.9.55）：新时间戳 ≠ 新内容。** 只等「时间戳更新的帧」还不够——
+> 时间戳是**帧到达**的时间，画面内容还压在投屏管线里（AirPlay → GStreamer → JPEG，
+> 0.2–0.5 s），转场更长。实测：计算器按 AC（15 → 0）、主屏点 Safari 图标、
+> Safari 点「+」，都拿到了「新的一帧、但内容还是旧的」→ `changed=False`，
+> `click_text` 因此双击了图标。
+> 现在改成三步：**等内容真的变（最多 1.2 s）→ 等转场结束 → 用稳定后的帧算变化**；
+> 另加 `changed_any_px`（含状态栏那一条），顶部工具栏（Safari 的「+」在 y≈0.07）
+> 的动作才不会被「跳过顶部 6%」的规则判成没变。
+
+### 2.26a `changed=false` 也不是「一定没生效」（2026-10-27 实测）
+
+0.9.55 之后 `changed` 已经是「等内容真的变 → 等转场 → 用稳定帧算」，但仍有两类**假阴性**：
+
+| 动作 | 现象 | 原因 |
+|---|---|---|
+| 点 Safari 地址栏（聚焦） | `changed=False`，其实光标已进去 | 光标/焦点环只有几十 px，低于 `min_px=60` 与阈值 |
+| 点自动补全里的网址 | `changed=False`，随后页面自己加载完了 | 网页导航 >1.2 s（`changed_after` 的等待上限），截稿时页面还没换 |
+
+**用法**：`changed=false` 只代表「1.2 s 内没捕捉到变化」，不等于没生效。判失败前先
+`ocr_timeline()`（它会说「这块刚出现 / 一直没动」）或隔 1 s 再截一张；连续两次都为空、
+且目标在顶部/底部系统带里，才判失败。
+
+### 2.27 程序坞是我们自己扫出来的（2026-10-27 定位）
+
+用户反馈：鼠标一到底部，程序坞就弹起；它没有文字，OCR 看不到，收起时又让画面变化。
+
+**根因在归位方式**：平板档案是 `park="bottom"`，`goto_corner()` 每次动作都先把指针
+`move ±4000 4000` **按到底边**、停 0.45 s，再从底边上行到目标。也就是说**每一次动作都会
+在屏幕底边停留一次**——这正是 iPadOS 弹程序坞的条件。它不是「用户手滑」，是我们自己干的。
+
+**已做**
+
+1. 取基准帧前等画面安静（`settled`），程序坞的弹出/收起不再被算成点击效果；
+2. **`dock_visible`（0.9.56）**：归位时在「压到角」和「上行之后」各取一帧，只比屏幕最下面
+   那一条（y>0.86）。实测两种结果都见过 —— 中屏 / y=0.80 / y=0.86 的目标是 `false`
+   （底边只差 71–282 px，指针自身），而 Safari 顶部「+」那一次是 **true（底边变化 68 294 px）**，
+   摘要直接写「程序坞被拉起来过」。差别在于程序坞**有没有在动作时还挂着**。
+
+**可选的做法（未做，按需挑）**：
+
+1. **底边停留时间压到最短**：到角后立刻上行，只在需要精确 y 原点时才多停；
+2. **程序坞检测**：动作后比一下「底边 12% 那一条」在归位前后有没有变——变了就是程序坞被
+   拉起来了，返回 `dock_visible: true`，AI 就知道这一段是系统 UI，不是 App 内容；
+3. **OCR 锚点**：在程序坞里放一个图标带文字的 App（小红书就是现成的），
+   OCR 读到它就知道「程序坞已弹起」。能做，但依赖图标、依赖 OCR 识别率，
+   不如第 2 条直接看底部那一条的像素；
+4. **从根上避开**：把「顶部停车点 + 上抬的底部停车点」改成「只用左右两条边 + 实测 y」，
+   不再碰底边——最彻底，但要重做归位与校准的形态。
+
+### 2.28 OCR 降级成 `.fast`：不是签名问题，是 ANE / mach-lookup 被掐（2026-10-27 定位）
+
+**现象**：`ocr-text` 每次调用都在 stderr 打
+
+```
+ocr: accurate 不可用，已降级为 fast（unknownError / Foundation._GenericObjCError 0）
+```
+
+同一张图：降级版 7 个 block、中文乱码（`IIt*1241> •,-, 2027 *iTIX`），
+正常版 20 个 block（`阅读7.6万 赞1234`）。MCP 那侧完全看不到这句 —— 只会觉得「这张图认不出来」。
+
+**根因**：`.accurate` 走 **ANE**（TextRecognition → e5rt / ANEServices）。它要两样东西：
+
+1. **mach-lookup** 到 ANE / TextRecognition 服务；
+2. 能读（首次能写）`~/Library/Caches/vision_arm64`（编译好的 `.e5` 模型）。
+
+被掐掉任一条就抛一个**没有信息量的** `_GenericObjCError 0`，`.fast` 仍可用 →
+helper 按设计降级。Intel 上是同一类失败的另一种错误码（`CRImageReaderError 9`，见 §2.3）。
+
+**30 秒证伪/证实**（不依赖手机，随便一张 JPEG）：
+
+```bash
+# 正常：engine=accurate / degraded=false
+control/bin/ocr-text shot.jpg | python3 -c 'import json,sys;d=json.load(sys.stdin);print(d["engine"],d["degraded"],len(d["blocks"]))'
+# 模拟「受限进程」：一秒内降到 fast（复现用户报的那条 stderr）
+sandbox-exec -p '(version 1)(allow default)(deny mach-lookup)' control/bin/ocr-text shot.jpg
+```
+
+实测（2026-10-27，M1 Pro / macOS 27.0.1）：
+
+| 场景 | 结果 |
+|---|---|
+| 普通终端，包内 `Contents/Frameworks/control/bin/ocr-text` | `accurate`、21 blocks，3/3 正常 |
+| 同一份文件改名 / 重签名（adhoc、DevID+runtime+entitlements） | 全部 `accurate` —— **签名无关** |
+| 同一份包内文件 + `sandbox-exec -p '(…)(deny mach-lookup)'` | `fast`、14 blocks + 用户报的那句 stderr，一条命令复现 |
+| 开发版（同源码新编）在同样 `deny mach-lookup` 下 | 同样 `fast` —— 版本也不相关 |
+| DSH 会话的 seatbelt 沙箱 | 包内那份降级；同一沙箱里**旧开发版**恰好还是 `accurate`（差异没定到具体规则，可能是 mach 白名单 / 已缓存的编译产物）。**所以「包内 vs 开发版」本身不是判据** |
+| `HOME=` 空目录（没有 `vision_*` 缓存、又要现编译） | **卡住不返回**（>60 s），MCP 侧 30 s 超时 |
+
+> **教训**：看到「包内二进制 vs 开发版行为不同」先别怀疑签名/构建参数——
+> 把**执行环境**换掉（同一个文件放在同一个 shell 里、换成不沙箱的终端）再比一次。
+> 这次真正的变量是「哪一层沙箱/哪份 HOME」，签名只是恰好和它们一起变。
+
+**已经做的（0.9.63）**：
+
+- helper 在 JSON 里回 `engine` / `degraded` / `degraded_reason`，stderr 另打一行
+  `OCR_DEGRADED engine=fast reason=…`；`.accurate` 失败先**原地重试一次**再降级；
+- `ocr_jpeg()` 把三个字段带进结果，并**只 WARNING 一次**（每帧都刷会把日志淹掉）；
+- MCP `ocr()` 摘要顶部加 `⚠️ OCR 引擎已降级…`，`click_text` 找不到目标时也提示
+  「可能是引擎降级，不是目标不存在」；GUI 的 OCR 面板同样在日志里留一行；
+- 老 helper（只在 stderr 说一句）仍然能识别成降级，不用等用户升级 App。
+
+**自查清单（以后遇到「OCR 变差」按顺序走）**：
+
+1. 看返回里 `degraded` 是不是 true，`degraded_reason` 写了什么；
+2. `env -i` 干净环境再跑一次（排除调用方塞的环境变量）；
+3. 确认不是 Intel / Rosetta（§2.3）、不是 `HOME`/缓存缺失；
+4. 还降级就查「谁允许了 mach-lookup」：终端沙箱、`sandbox-exec`、IDE 的沙箱插件、
+   系统级 MDM 配置都可能掐掉 ANE；
+5. **别**去重签名、别改 entitlements、别重装 App —— 这张表里没有一条是签名引起的。
+
 ## 3. 坐标与点击
 
 - **布局会漂移**：信息 App 新建按钮实测 `y 0.885 → 0.935`；每次按最新截图取坐标。
@@ -933,6 +1110,64 @@ PyInstaller 把模块冻进包里后 `__file__` 指向包内，这个路径落�
 - 如果将来真要做下载：Release JSON 的 `assets[].id` 就是 API 直链要的 id；
   `assets_url` 形如 `…/repos/<o>/<r>/releases/<id>/assets`，切掉 `/releases/` 得到 repo 根；
   校验只能靠发布页那份 `<name>.sha256`（94 B，同样走 API 直链取）。
+
+### 4.4a 打包偶发失败：`codesign` 报 "A timestamp was expected but was not found"
+
+2026-10-26 23:20 的 arm64 构建挂在 3/6 步：
+
+```
+.../Contents/Frameworks/airplay/gstreamer-1__dot__0/libgstapp.dylib: A timestamp was expected but was not found.
+```
+
+不是代码问题：`--timestamp` 要向 Apple 的时间戳服务器申请，**那一次请求失败了**，嵌套组件的
+签名因此没有时间戳。同一份代码**重跑一次就通过**（23:29 `status: Accepted`）。
+
+处理顺序：① 先原样重试一次；② 还不行就单独验服务器——
+`codesign --force --options runtime --timestamp --sign "<ID>" /tmp/x.dylib`，成功说明服务器没问题，
+那就是优先级/嵌套顺序的事（可改成先逐个签 dylib 再 `--deep` 签整个 app）。
+
+**顺带一个坑**：`build_release.sh 2>&1 | tee log` 的退出码是 `tee` 的，构建失败也会显示成功。
+判断成败要 `grep "status: Accepted"`，或者看 DMG/`stapler` 有没有产出。
+
+### 4.4b `github.com:443` 不通时怎么发版（2026-10-27 实测）
+
+同一台机器上：`curl https://github.com` 超时（75 s 连不上），`https://api.github.com` 正常。
+于是 `git push` 全挂，但 `gh release create/upload` 照常成功 —— **gh 走 API，git 走 443 直连**。
+
+- 发版（上传资产、建 Release）不受影响：`gh release create …` 直接可用；
+- **改仓库文件**（README、`docs-src/VERSION.txt`）改用 Contents API 提交：
+
+```bash
+sha=$(gh api repos/<o>/<r>/contents/README.md --jq .sha)
+b64=$(base64 -i README.md | tr -d '\n')
+gh api -X PUT repos/<o>/<r>/contents/README.md \
+  -f message="docs: …" -f content="$b64" -f sha="$sha" -f branch=main
+```
+
+- 提交后 GitHub Pages 会自动重建（`gh api repos/<o>/<r>/pages/builds/latest` 看 `status`）；
+- 校验文件是不是真的更新了：`gh api .../contents/<path> --jq .content | base64 -d`
+  （别用 raw.githubusercontent.com，同样可能被掐）。
+
+### 4.4c `notarytool` 卡在 "Conducting pre-submission checks" 不报错（2026-10-27 实测）
+
+**现象**：`xcrun notarytool submit <dmg> --wait` 卡在 pre-submission checks 十几分钟，
+`notarytool history` 里**查不到这次提交**（说明连提交都没建起来）。Network 到
+`appstoreconnect.apple.com` 正常，keychain 也解锁着。
+
+**根因**：**DMG 还挂在系统里**（之前 `hdiutil attach` 验证包子时留下的挂载，`/Volumes` 里看不到
+也可能仍在：`hdiutil info -plist` 里还列着 image-path + diskimages-helper）。
+
+**处理**：
+
+```bash
+# 找到那个镜像的设备号（不要用 /Volumes 猜）
+hdiutil info -plist | plutil -convert json -o - - | python3 -c "...images→system-entities..."
+hdiutil detach /dev/diskNN -force
+# 然后再提交，几秒钟就显示 Submission ID received / Successfully uploaded
+```
+
+`packaging/build_release.sh` 自己在第 5 步有这条 preflight（会警告“还挂在系统里”），
+但**手动补公证**时绕过了脚本，就踩上了。
 
 ## 4.5 UVC 采集卡（HDMI 有线投屏）
 
