@@ -27,6 +27,7 @@
       <a href="#ai">AI 怎么用</a>
       <a href="#how">怎么工作</a>
       <a href="#start">开始使用</a>
+      <a href="#probe">探针</a>
       <a href="docs/">文档</a>
       <a href="#faq">常见问题</a>
       <a class="lang" href="en/">English</a>
@@ -368,6 +369,35 @@
         <p>与 Releases 页面公布的 SHA-256 对照即可。</p>
       </div>
     </details>
+  </div>
+</section>
+
+<!-- ============ Pointer Tester ============ -->
+<section id="probe">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Pointer Tester（探针 App）</h2>
+      <p>校准和排障时读取「指针真值」的配套 iOS App。可选 —— 不装也能用 Quileg HID。</p>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <h3>它解决什么</h3>
+        <p>蓝牙指针发的是相对位移，校准要先知道「这一下到底走到哪」。它把指针坐标、事件数、事件间隔（AGE）和屏幕尺寸实时显示在屏幕上，校准与验收直接读真值，不必靠两帧之差去猜。</p>
+      </div>
+      <div class="card">
+        <h3>原生版：TestFlight</h3>
+        <p>已通过 Apple 审核的外部测试，公开链接可直接加入。整张分段表只有原生版量得出来 —— iPhone 上最底部那几档，网页里收不到事件。</p>
+      </div>
+      <div class="card">
+        <h3>网页版：免安装</h3>
+        <p>打开就能用，也可以「添加到主屏幕」。日常读数够用；iPhone 上 y&gt;0.94 那一条收不到指针事件。两版读数格式相同，AI 侧不用区分。</p>
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:22px">
+      <a class="btn btn-primary" href="https://testflight.apple.com/join/zAXDqJsX" target="_blank" rel="noopener">TestFlight 加入外部测试</a>
+      <a class="btn btn-ghost" href="probe/">打开网页版</a>
+    </div>
+    <p class="mini" style="margin-top:14px">需要 iOS 17 或更高。App 不联网、不申请任何权限，只显示坐标，不会移动指针；TestFlight 名额满后会轮换。</p>
   </div>
 </section>
 
