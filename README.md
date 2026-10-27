@@ -9,12 +9,12 @@
 
 ## 最新版本
 
-**0.9.62（Build 117）** · 2026-10-27 · [Release 说明](https://github.com/jianghui1974/Quileg-HID/releases/tag/v0.9.62)
+**0.9.63（Build 118）** · 2026-10-27 · [Release 说明](https://github.com/jianghui1974/Quileg-HID/releases/tag/v0.9.63)
 
 | 安装包 | 适用机器 | SHA-256 |
 |---|---|---|
-| `Quileg-HID-0.9.62-arm64.dmg` | Apple 芯片（M1–M4） | `fb030f2ce6120085bf602546c807a38267e8a2a94dfeadb1375471100a77d44b` |
-| `Quileg-HID-0.9.62-intel.dmg` | Intel Mac（macOS 13–26） | `a2731b6c754741be987d735b8b50bc80b33180f9209088be3c2d272b5129d62a` |
+| `Quileg-HID-0.9.63-arm64.dmg` | Apple 芯片（M1–M4） | `d0b7c135d33c1fec82397522b7a601bd5eab6785b3bde25c3f5feacbfc972e12` |
+| `Quileg-HID-0.9.63-intel.dmg` | Intel Mac（macOS 13–26） | `2732441372074069cb8eb943588c837710b9942a2b1069a9a1634b1f9427162b` |
 
 **两个包不通用**：装错会提示「需要 Apple 芯片」。包内 `VERSION.txt` 的 `Arch:` 行可以核对；
 下载后可用同 Release 中的 `.sha256` 文件校验完整性。
@@ -35,6 +35,17 @@
 3. 按 App 内引导刷固件、投屏，再决定要不要校准：**校准是可选的**（15–30 分钟，视设备）——不做也能用，AI 会走视觉闭环，只是每次动作慢几秒、精度粗一些；做过之后一次开出、最准。只要不改手机、分辨率、指针大小、视频源和方向，一张表可以一直用。
 
 安装包已用 Developer ID 签名、经 Apple 公证，公证票据写入包内，首次启动无需联网验证。
+
+## 0.9.63 要点
+
+- **OCR 降级不再静默**：`ocr` 的结果现在带 `engine` / `degraded` / `degraded_reason`，
+  MCP 摘要顶部会出现 `⚠️ OCR 引擎已降级…`，GUI 日志也留一行。以前 `.accurate` 不可用时
+  静默退 `.fast`，中文乱码、列表锚点漏认，调用方只会以为「图里没字」。
+- `.accurate` 失败**先原地重试一次**再降级；错误描述补上 `domain/code`（Vision 常只给一句
+  「The operation couldn't be completed」，现在能看出是 `_GenericObjCError`）。
+- 定位结论：**不是签名、不是打包**。`.accurate` 走 ANE，需要 mach-lookup 与
+  `~/Library/Caches/vision_*`；包内二进制在普通终端实测正常，受限进程/无缓存才降级。
+  复现与自查见 `PITFALLS.md` §2.28。
 
 ## 0.9.62 要点
 
