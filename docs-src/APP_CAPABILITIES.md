@@ -1,7 +1,7 @@
 # Quileg HID 功能地图（给 AI）
 
 > 目的：让 AI 知道 **Mac App 自己**能做什么、设置在哪、出问题先看什么。
-> 操作 iPhone 的细节看 [AI_GUIDE.md](AI_GUIDE.md)；踩坑看 [PITFALLS.md](PITFALLS.md)。
+> 操作 iPhone 的细节看 [AI_GUIDE.md](../AI_GUIDE.md)；踩坑看 [PITFALLS.md](../PITFALLS.md)。
 
 ## 1. 它是什么
 
@@ -35,12 +35,13 @@ GUI 是常驻服务：**红叉只隐藏窗口，⌘Q 才退出**（见 [LIFECYCL
 |---|---|---|
 | 屏幕镜像 | 主窗口左侧 | AirPlay：选 `Quileg - <机器名>`；UVC：插采集卡即出帧 |
 | 视频源 | 舞台工具条「源 / 双路」；MCP `select_video` / `monitor_videos` | **手动**切 AirPlay/UVC（不自动切换）；双路并排监视；无信号/冻结会标注 |
+| 被控设备切换 | 舞台工具条最左「被控 XXX ▾」（视频正上方） | 点一下就能换 iPhone / iPad / Android / Windows / Mac，不用进设置；它同时决定键盘策略与校准形态。当前校准表与选择矛盾时铭牌标 **⚠**，并在切换时提示重校 |
 | AI 活动条 | 舞台底部 | 实时显示当前 MCP 工具/耗时、最近调用、`CALL / AVG / ERR` 统计；忙时琥珀动效，待命呼吸灯。数据来自 MCP 中间件上报（`mcp_server.py` 0.4.0），不影响工具本身 |
 | 语音桥 / 音效 | MCP `speak` / `play_audio`；活动条点击或 ⌘. 停止 | 系统 `say` 朗读（中文自动 Tingting），让手机输入法听写转写，解决中文点选慢；`afplay` 播本地音频/音效（aiff/wav/mp3/m4a…，≤8 MB）；同一时刻一条，可打断 |
 | 网格叠加 | 舞台工具条「网格」；设置 → 交互 → 网格线 | 开关立即生效并记住（`grid_overlay`）；线型可选三分线 / 中心十字 / 安全框（10% 边距）/ 十等分（`grid_style`），双路时每格各画一份 |
-| 键盘策略 | 设置 → 被控设备；`control/keymap_default.json` | 按 iOS/Android/Windows/macOS 区分 allow/confirm/deny；审批 token；`keyboard_shortcuts` 查询 |
-| 设备称呼 | 同一处设置；`app/core/device_noun.py` | 界面里的「iPhone」改为随被控设备变化（iPhone / 安卓手机 / Windows 电脑 / Mac）；非 Apple 平台的投屏步骤改为采集卡（UVC）指引 |
-| 选择被控设备 | **设备初始化第 2 步**；设置 → 被控设备 | 引导里就能选（不必先跳去设置），选完后续步骤的称呼/配对/投屏文案立即跟着变；设置里保留同样选项 |
+| 键盘策略 | 设置 → 被控设备；`control/keymap_default.json` | 按 iPhone / iPad / Android / Windows / macOS 区分 allow/confirm/deny（iPad 才允许 ⌘Tab）；审批 token；`keyboard_shortcuts` 查询 |
+| 设备称呼 | 同一处设置；`app/core/device_noun.py` | 界面里的「iPhone」改为随被控设备变化（iPhone / iPad / 安卓手机 / Windows 电脑 / Mac）；非 Apple 平台的投屏步骤改为采集卡（UVC）指引 |
+| 选择被控设备 | **设备初始化第 2 步**；设置 → 被控设备 | 引导里就能选（不必先跳去设置），选完后续步骤的称呼/配对/投屏/校准文案立即跟着变；设置里保留同样选项。0.9.47 起 iPhone 与 iPad 是**两项**（键盘策略、校准形态都不同） |
 | 白/黑名单 | 设置 → 被控设备 → 编辑白名单 / 黑名单… | 逐条屏蔽或放开；放开黑名单需二次确认，绝对黑名单锁定 |
 | 反馈 | 邮件 `quileg@airdiode.com` | AI 发现问题可建议用户发信反馈（先征得同意） |
 | 点击 / 输入 | 控制、输入面板；MCP | 归一化坐标；动作后返回截图与 `changed` |
@@ -48,7 +49,7 @@ GUI 是常驻服务：**红叉只隐藏窗口，⌘Q 才退出**（见 [LIFECYCL
 | 软鼠标 | 控制 → 01 软鼠标 | 方向键 + 指针步长、**左键 / 右键**、滚轮 ↑↓ + 滚轮步长；**镜像区点击只移动指针、不点击**；右键是应用相关的（原生列表可用，部分第三方列表不响应） |
 | 滚动 | 右侧「控制」面板的 **滚轮 ↑ / ↓** 按钮 | 一次点击发 `scroll_step` 份滚轮（3/6/8/12/20/30）；**镜像区滚轮与触控板手势已关闭**（命令有可见延迟，跟手感差） |
 | OCR | MCP `ocr` / `click_text` | Apple Vision，返回 bbox/center |
-| 校准 | 恢复/身份 → 校准向导；`python control/calibrate.py setup` | 15–30 分钟（视设备）；按 **视频源 + 分辨率** 各存一份 |
+| 校准 | 恢复/身份 → 校准向导；`python control/calibrate.py setup` | **可选**：有表时一次开出（5–30 px），没表时 AI 走视觉闭环（10–40 px、每动作多 2–6 s）。15–30 分钟（视设备）；按 **视频源 + 分辨率** 各存一份 |
 | AI 请求校准 | MCP `calibration_request` | 只弹确认，用户点开始；AI 不自己跑 |
 | 动作队列 | 主窗口底部 | 串行执行，支持取消 |
 | 设备诊断 | 设备面板 | BLE 五项、端口、固件版本、链路 |
@@ -70,7 +71,7 @@ GUI 是常驻服务：**红叉只隐藏窗口，⌘Q 才退出**（见 [LIFECYCL
 | `text_scale` | `system`（跟随 macOS 文字大小） | 重启；旧 `ui_scale` 自动迁移 |
 | `pointer_step` / `scroll_step` | 40 / 6 | 立即；`scroll_step` 1..30 = 每次点滚轮按钮发的份数 |
 | `wheel_direction` | `normal` | 立即（每次 `scroll(fine=…)` 重新读）；`inverted` = 滚轮方向反转 |
-| `controlled_platform` | `ios` | 立即；决定键盘策略（allow/confirm/deny）、界面称呼与软键盘按键名称；引导第 2 步也可选 |
+| `controlled_platform` | `iphone` | 立即；`iphone / ipad / android / windows / macos`，决定键盘策略（allow/confirm/deny）、界面称呼、软键盘按键名称，以及**校准形态**（手机 / 平板）；引导第 2 步也可选。旧值 `ios` 自动迁移为 `iphone` |
 | `grid_overlay` / `grid_style` | `false` / `thirds` | 立即；工具条「网格」开关状态会被记住 |
 | 键盘白名单/黑名单 | 设置 → 被控设备 → 编辑 | 立即；逐条屏蔽或放开，写入 `keymap.json` |
 | `log_level` | `info` | 立即 |
@@ -81,9 +82,11 @@ GUI 是常驻服务：**红叉只隐藏窗口，⌘Q 才退出**（见 [LIFECYCL
 
 ## 5. 出问题先看什么
 
-> **iPhone 两个总开关**：`辅助触控` 不开 → 没有鼠标指针（click/move 全像没反应）；
-> `鼠标键 → 使用主键盘` 开着 → 键盘变鼠标（`i j k l m o u 7 8 9 .` 不落屏、回车弹菜单）。
-> 路径：设置 → 辅助功能 → 触控 → 辅助触控（→ 指针设备 → 鼠标键）。详见 PITFALLS §0/§2.1。
+> **iPhone 三个总开关**：`辅助触控` 不开 → 没有鼠标指针（click/move 全像没反应）；
+> `鼠标键 → 使用主键盘` 开着 → 键盘变鼠标（`i j k l m o u 7 8 9 .` 不落屏、回车弹菜单）；
+> `自动锁定` 不是「永不」→ 锁屏后投屏停住、校准跑到一半整轮作废。
+> 路径：设置 → 辅助功能 → 触控 → 辅助触控（→ 指针设备 → 鼠标键）；自动锁定在设置 → 显示与亮度。
+> 详见 PITFALLS §0/§2.1。
 
 
 按顺序，不要凭感觉重装：
