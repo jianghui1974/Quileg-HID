@@ -9,12 +9,12 @@
 
 ## 最新版本
 
-**0.9.63（Build 118）** · 2026-10-27 · [Release 说明](https://github.com/jianghui1974/Quileg-HID/releases/tag/v0.9.63)
+**0.9.64（Build 119）** · 2026-10-28 · [Release 说明](https://github.com/jianghui1974/Quileg-HID/releases/tag/v0.9.64)
 
 | 安装包 | 适用机器 | SHA-256 |
 |---|---|---|
-| `Quileg-HID-0.9.63-arm64.dmg` | Apple 芯片（M1–M4） | `d0b7c135d33c1fec82397522b7a601bd5eab6785b3bde25c3f5feacbfc972e12` |
-| `Quileg-HID-0.9.63-intel.dmg` | Intel Mac（macOS 13–26） | `2732441372074069cb8eb943588c837710b9942a2b1069a9a1634b1f9427162b` |
+| `Quileg-HID-0.9.64-arm64.dmg` | Apple 芯片（M1–M4） | `59778440e0ab864fb2ebcc837c4e701bf2e5a1b62a65075cb20c32855281d9e6` |
+| `Quileg-HID-0.9.64-intel.dmg` | Intel Mac（macOS 13–26） | `c859d53379334c0ac746a1464fae0b48d4f7e6e10daf491fc619d6784f911a0d` |
 
 **两个包不通用**：装错会提示「需要 Apple 芯片」。包内 `VERSION.txt` 的 `Arch:` 行可以核对；
 下载后可用同 Release 中的 `.sha256` 文件校验完整性。
@@ -44,6 +44,20 @@
 3. 按 App 内引导刷固件、投屏，再决定要不要校准：**校准是可选的**（15–30 分钟，视设备）——不做也能用，AI 会走视觉闭环，只是每次动作慢几秒、精度粗一些；做过之后一次开出、最准。只要不改手机、分辨率、指针大小、视频源和方向，一张表可以一直用。
 
 安装包已用 Developer ID 签名、经 Apple 公证，公证票据写入包内，首次启动无需联网验证。
+
+## 0.9.64 要点
+
+- **写 Wi-Fi 不再被串口改名卡住**：板子刷完固件/复位后 USB 串口会换名字
+  （`usbmodem1234561` → `usbmodem84C7BB70AF641`），旧版本拿旧名字去开就报
+  `[Errno 2] could not open port …`。现在写入前会重新枚举：只剩一个候选就自动改用并提示，
+  多个候选让你回第 4 步重选，一个都没有就直说「插好数据线 / 换 USB 口 / 点刷新」。
+- **校准不再卡在最小档位**：小位移（<150 单位，约 13 px）读不到时只跳过、不判废；
+  中/大档位连续两次读不到才放弃这一轴。以前「连续两档」就让整轮 20 分钟作废。
+- **中断原因不再被吞**：预检拦截（校准已经在跑 / 服务端未响应 / 没有投屏画面 / 队列已满）
+  以前会显示成 `<built-in method title …>`，现在原样说出是哪一条。
+- **剩余时间不再反向增长**：`约剩 3 分钟` 不会再跳到 10 分钟。
+- 文档：`PITFALLS.md` 新增 §2.29（端口改名）、§2.30（小档位读不到），并补上
+  Pointer Tester 的 TestFlight 安装入口。
 
 ## 0.9.63 要点
 
