@@ -9,12 +9,12 @@
 
 ## 最新版本
 
-**0.9.64（Build 119）** · 2026-10-28 · [Release 说明](https://github.com/jianghui1974/Quileg-HID/releases/tag/v0.9.64)
+**0.9.65（Build 120）** · 2026-10-28 · [Release 说明](https://github.com/jianghui1974/Quileg-HID/releases/tag/v0.9.65)
 
 | 安装包 | 适用机器 | SHA-256 |
 |---|---|---|
-| `Quileg-HID-0.9.64-arm64.dmg` | Apple 芯片（M1–M4） | `59778440e0ab864fb2ebcc837c4e701bf2e5a1b62a65075cb20c32855281d9e6` |
-| `Quileg-HID-0.9.64-intel.dmg` | Intel Mac（macOS 13–26） | `c859d53379334c0ac746a1464fae0b48d4f7e6e10daf491fc619d6784f911a0d` |
+| `Quileg-HID-0.9.65-arm64.dmg` | Apple 芯片（M1–M4） | `a6a2e29553e3fec4f8bcf0f0b664cf54eb6c1ed9130a26c7dff671ca0affc4de` |
+| `Quileg-HID-0.9.65-intel.dmg` | Intel Mac（macOS 13–26） | `72cb5c540af627e99a02d5cd328d2f9baaa1514600c6cf92d2e06696de7787a5` |
 
 **两个包不通用**：装错会提示「需要 Apple 芯片」。包内 `VERSION.txt` 的 `Arch:` 行可以核对；
 下载后可用同 Release 中的 `.sha256` 文件校验完整性。
@@ -44,6 +44,19 @@
 3. 按 App 内引导刷固件、投屏，再决定要不要校准：**校准是可选的**（15–30 分钟，视设备）——不做也能用，AI 会走视觉闭环，只是每次动作慢几秒、精度粗一些；做过之后一次开出、最准。只要不改手机、分辨率、指针大小、视频源和方向，一张表可以一直用。
 
 安装包已用 Developer ID 签名、经 Apple 公证，公证票据写入包内，首次启动无需联网验证。
+
+## 0.9.65 要点（紧急）
+
+- **旧 macOS 上 OCR / UVC 工具起不来**：0.9.45–0.9.64 的包是用宿主系统版本编译的
+  Swift 小工具、事后只改了 minos —— dyld 只认符号，于是 macOS 26 之前的系统上
+  `ocr-text` / `uvc-frame` 直接 `Symbol not found: __StaticArrayStorage`。
+  表现为 **OCR 不可用**、校准「每一档都读不到指针」。现在按真实最低系统编译
+  （ocr/textsize → 13.0，uvc → 14.0），并在构建期用 `nm -u` 拦截这类回归。
+- **延迟太高直接拒绝校准**：投屏延迟 > 1200 ms 时每档读到的都是移动前的画面，
+  表会系统性偏短；现在中止并告诉你先修链路。
+- **续校按钮不再说谎**：「继续校准（从 TL 开始）」以前实际从 BL 开始，现在统一按
+  BL → BR → TL → TR。
+- 进度停住时显示「已 X 分钟没有进展」，不再从 2 分钟涨到 16 分钟。
 
 ## 0.9.64 要点
 
