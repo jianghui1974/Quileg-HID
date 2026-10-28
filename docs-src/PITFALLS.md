@@ -1111,6 +1111,40 @@ BL x=20 读不到，跳过这一档
 **先看哪个数**：`命令回执`。>300 ms 就先修 Wi-Fi（靠近 AP / 换 2.4G 信道 / Mac 插网线 /
 停掉同步下载），**回执 1.2 s 时校准没有意义**，改算法也救不回来。投屏延迟 2.8 s 只是第二条证据。
 
+### 2.31 Swift 小工具按「宿主系统」编译 → 旧 macOS 上 dyld 直接拒绝启动（2026-10-28 现场定位）
+
+**现象**：客户（Intel Mac，macOS < 26）校准每一档都「读不到指针」，探针和帧差都没读到；
+同时 `app.log` 里刷了 1.7 万行：
+
+```
+dyld[34569]: Symbol not found: _$ss20__StaticArrayStorageCN
+  Referenced from: .../control/bin/uvc-frame
+  Expected in:     /usr/lib/swift/libswiftCore.dylib
+```
+
+**根因**：`build_release.sh` 用 **宿主版本** 编译 Swift 工具
+（`swiftc -target arm64-apple-macos27.0`），再用 `lower_app_minos.py` 把 minos **改成 13.0**。
+那是假的最低系统：**dyld 只认符号，不看 minos**。`__StaticArrayStorage` 是 Swift 6.2
+运行时的符号，旧系统的 `libswiftCore` 没有 → `ocr-text` / `uvc-frame` 启动即失败。
+
+后果链条：`ocr-text` 起不来 → `ocr_barcodes()` 返回 []、`ocr_jpeg()` 抛错 →
+`probe.read_state()` 静默 None → **每一档都读不到指针**，看起来像「链路太慢」。
+实测同一张 `calib-fail-*.jpg` 在我们机器上一次就解出
+`P1,67.85,823.48,2049,390,844` —— 帧完全正常，是工具起不来。
+
+**修法（0.9.65）**：
+
+- `build_release.sh` 1.5/6 改成按真实最低系统编译：`ocr`/`textsize` → `macos13.0`，
+  `uvc` → `macos14.0`（它用了 macOS 14 的 `external` API）；
+- 加构建期闸门：`nm -u` 里出现 `__StaticArrayStorage` 就**中止构建**，不再靠人眼；
+- `ocr.py` 助手失败时留一行 WARNING（每进程一次），不再静默吞掉
+  —— 这次就是被「静默」放大了排查成本；
+- 顺带：`MEASURE_ORDER`（BL、BR、TL、TR）—— 续校按钮终于和实际顺序一致；
+  进度停住时改为「已 X 分钟没有进展」，不再从 2 分钟涨到 16 分钟。
+
+**教训**：mos 可以改，符号不能。凡是「先按新系统编译、再事后改 minos」的流水线，
+都要在最低系统上真跑一次二进制（哪怕只是 `--help`），或者至少 `nm -u` 对一遍。
+
 ## 3. 坐标与点击
 
 - **布局会漂移**：信息 App 新建按钮实测 `y 0.885 → 0.935`；每次按最新截图取坐标。
