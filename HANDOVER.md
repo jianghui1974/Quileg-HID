@@ -118,8 +118,14 @@ calibration_status()  → resume 为空 = 没有被打断的校准；calibrating
    要进就 `mode="open"`。iPhone 没有程序坞带（`park_lift=0`，不钳位）。
 4. **打包 Swift 小工具必须指定真实 `-target`**：`build_release.sh` 已固定 `ocr`/`textsize`→`macos13.0`、
    `uvc`→`macos14.0`，并有 `nm -u | grep __StaticArrayStorage` 闸门。**别「按宿主编译、事后改 minos」**，dyld 只认符号。
-5. **`git push` 到 github.com:443 在本机不通**（`api.github.com` 正常）：发版用 `gh release create`，
-   改仓库文件用 `gh api -X PUT .../contents/...`。
+5. **GitHub 上只放「闭源发布 + 官网」，源码只在本地 git**（这是**产品决定**，不是环境问题）。
+   - `git push` 到 `github.com:443` 在本机也不通（`api.github.com` 正常），但**别去修它** ——
+     也不要把源码传上去；
+   - 发版用 `gh release create`；改远端文档用 `gh api -X PUT .../contents/...`
+     （远端只有 `README/CHANGELOG/HANDOVER/PITFALLS`、`docs/`、`docs-src/`、`index.html` 这些）；
+   - **本地 git 是源码的唯一真相** → 每次发版后打一份 bundle 到 `backups/`：
+     `git bundle create backups/repo-v<版本>.bundle --all`，再 `git bundle verify`
+     （当前锚点见 `backups/RESTORE.md`）。
 6. **拼音输入法会把 ASCII 组合成汉字**：`type_text` 有护栏，但**手写 `key` 逐字**没有；
    写文案/搜索优先 `type_text`，或打字前 `key("ctrl+space")` 切英文。
 
@@ -167,7 +173,7 @@ iPhone ──AirPlay──▶ UxPlay(7100) ──GStreamer──▶ JPEG ──�
 | 数据 / 日志 / 校准表 | `~/Library/Application Support/HIDBridge/`（`calib.json` 是唯一权威表） |
 | 源码 | `app/`（GUI）`control/`（控制层 + MCP）`firmware/`（固件）`packaging/`（出包）`pointer-tester/`（探针） |
 | 粗测地图 | `control/scanmap.py`（纯逻辑）+ `Calibrator.coarse_scan()`；落在 `calib.wip.json` 的 `_wip.visibility` |
-| 回滚锚点 | `backups/RESTORE.md`，含 `repo-v0.9.22.bundle`（含全部历史与标签） |
+| 回滚锚点 | `backups/RESTORE.md`，最新是 `repo-v0.9.72.bundle`（43 MB，含全部历史与标签；源码的唯一异地副本） |
 | 内置固件 | `app/firmware/*.bin` + `manifest.json`（sha256 在里面） |
 | 板子 | `HID Bridge C784`（`192.168.31.25`）、`HID Bridge 4F7C`（`.143`），固件 0.7.0 |
 
