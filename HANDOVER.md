@@ -102,6 +102,9 @@ calibration_status()  → resume 为空 = 没有被打断的校准；calibrating
   一档正常采样。
 - 本机实测结论：**除顶边那条带（≥720 单位，返回 `?`）之外整屏可见** —— 也就是「没有要跳的」。
 
+⚠️ 切模式走 `⌘I`，偶发 **409 Conflict** 必须重试（`_retry`），否则粗测会静默跳过；
+  扫完若因断链没切回精细，`_calibrate` 开头的 `_ensure_fine_mode()` 会兜底还原。
+
 ⚠️ 用之前必须 `measure_latency()`：不测延迟时 `_settle` 退化到 0.2 s，帧还没更新就读，
   扫描会变成一步一个 `B`。
 
