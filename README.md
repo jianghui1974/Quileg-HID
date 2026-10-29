@@ -1,270 +1,425 @@
-# Quileg HID
+# XIAO ESP32S3 Plus — 硬件检测与交接文档
 
-让 AI 通过投屏看画面、通过蓝牙键鼠操作 iPhone / iPad 的 macOS 应用。
-无需越狱、无需在手机上安装 App、无需开发者模式。
-
-**[官网](https://jianghui1974.github.io/Quileg-HID/)** · **[下载最新版](https://github.com/jianghui1974/Quileg-HID/releases/latest)** · **[文档](https://jianghui1974.github.io/Quileg-HID/docs/)**
-
-> 本仓库只存放官网与发布资产。Quileg HID 是闭源软件，App 源码不在本仓库。
-
-## 最新版本
-
-**0.9.65（Build 120）** · 2026-10-28 · [Release 说明](https://github.com/jianghui1974/Quileg-HID/releases/tag/v0.9.65)
-
-| 安装包 | 适用机器 | SHA-256 |
-|---|---|---|
-| `Quileg-HID-0.9.65-arm64.dmg` | Apple 芯片（M1–M4） | `a6a2e29553e3fec4f8bcf0f0b664cf54eb6c1ed9130a26c7dff671ca0affc4de` |
-| `Quileg-HID-0.9.65-intel.dmg` | Intel Mac（macOS 13–26） | `72cb5c540af627e99a02d5cd328d2f9baaa1514600c6cf92d2e06696de7787a5` |
-
-**两个包不通用**：装错会提示「需要 Apple 芯片」。包内 `VERSION.txt` 的 `Arch:` 行可以核对；
-下载后可用同 Release 中的 `.sha256` 文件校验完整性。
-
-## 配套：Pointer Tester（可选）
-
-校准与排障时读取指针真值的 iOS App；不装也能用 Quileg HID。
-
-- **原生版**：[TestFlight 外部测试](https://testflight.apple.com/join/zAXDqJsX)（已通过 Apple 审核，公开链接可直接加入；iOS 17+，不联网、不申请权限，只显示坐标）
-- **网页版**：[打开即用](https://jianghui1974.github.io/Quileg-HID/probe/)（免安装；iPhone 上最底部一条收不到指针事件）
-
-整张分段表只有原生版量得出来。[官网说明](https://jianghui1974.github.io/Quileg-HID/#probe)
-
-## 要求
-
-| 项 | 要求 |
-|---|---|
-| 系统 | macOS 13.0 及以上 |
-| 处理器 | Apple Silicon（M1–M4）或 Intel Mac（macOS 13–26）；两个架构**分开下载、互不混装** |
-| 硬件 | ESP32-S3 开发板，16MB Flash（XIAO ESP32S3 Plus、ESP32-S3-WROOM-1-N16R8 模组的第三方板已验证） |
-| 被控设备 | iPhone / iPad（AirPlay 屏幕镜像）；Android / Windows / macOS 需 UVC 采集卡 |
-
-## 安装
-
-1. 按机器选包：Apple 芯片下载 `-arm64`，Intel Mac 下载 `-intel`；
-2. 把 `Quileg HID.app` 拖进「应用程序」；
-3. 按 App 内引导刷固件、投屏，再决定要不要校准：**校准是可选的**（15–30 分钟，视设备）——不做也能用，AI 会走视觉闭环，只是每次动作慢几秒、精度粗一些；做过之后一次开出、最准。只要不改手机、分辨率、指针大小、视频源和方向，一张表可以一直用。
-
-安装包已用 Developer ID 签名、经 Apple 公证，公证票据写入包内，首次启动无需联网验证。
-
-## 0.9.65 要点（紧急）
-
-- **旧 macOS 上 OCR / UVC 工具起不来**：0.9.45–0.9.64 的包是用宿主系统版本编译的
-  Swift 小工具、事后只改了 minos —— dyld 只认符号，于是 macOS 26 之前的系统上
-  `ocr-text` / `uvc-frame` 直接 `Symbol not found: __StaticArrayStorage`。
-  表现为 **OCR 不可用**、校准「每一档都读不到指针」。现在按真实最低系统编译
-  （ocr/textsize → 13.0，uvc → 14.0），并在构建期用 `nm -u` 拦截这类回归。
-- **延迟太高直接拒绝校准**：投屏延迟 > 1200 ms 时每档读到的都是移动前的画面，
-  表会系统性偏短；现在中止并告诉你先修链路。
-- **续校按钮不再说谎**：「继续校准（从 TL 开始）」以前实际从 BL 开始，现在统一按
-  BL → BR → TL → TR。
-- 进度停住时显示「已 X 分钟没有进展」，不再从 2 分钟涨到 16 分钟。
-
-## 0.9.64 要点
-
-- **写 Wi-Fi 不再被串口改名卡住**：板子刷完固件/复位后 USB 串口会换名字
-  （`usbmodem1234561` → `usbmodem84C7BB70AF641`），旧版本拿旧名字去开就报
-  `[Errno 2] could not open port …`。现在写入前会重新枚举：只剩一个候选就自动改用并提示，
-  多个候选让你回第 4 步重选，一个都没有就直说「插好数据线 / 换 USB 口 / 点刷新」。
-- **校准不再卡在最小档位**：小位移（<150 单位，约 13 px）读不到时只跳过、不判废；
-  中/大档位连续两次读不到才放弃这一轴。以前「连续两档」就让整轮 20 分钟作废。
-- **中断原因不再被吞**：预检拦截（校准已经在跑 / 服务端未响应 / 没有投屏画面 / 队列已满）
-  以前会显示成 `<built-in method title …>`，现在原样说出是哪一条。
-- **剩余时间不再反向增长**：`约剩 3 分钟` 不会再跳到 10 分钟。
-- 文档：`PITFALLS.md` 新增 §2.29（端口改名）、§2.30（小档位读不到），并补上
-  Pointer Tester 的 TestFlight 安装入口。
-
-## 0.9.63 要点
-
-- **OCR 降级不再静默**：`ocr` 的结果现在带 `engine` / `degraded` / `degraded_reason`，
-  MCP 摘要顶部会出现 `⚠️ OCR 引擎已降级…`，GUI 日志也留一行。以前 `.accurate` 不可用时
-  静默退 `.fast`，中文乱码、列表锚点漏认，调用方只会以为「图里没字」。
-- `.accurate` 失败**先原地重试一次**再降级；错误描述补上 `domain/code`（Vision 常只给一句
-  「The operation couldn't be completed」，现在能看出是 `_GenericObjCError`）。
-- 定位结论：**不是签名、不是打包**。`.accurate` 走 ANE，需要 mach-lookup 与
-  `~/Library/Caches/vision_*`；包内二进制在普通终端实测正常，受限进程/无缓存才降级。
-  复现与自查见 `PITFALLS.md` §2.28。
-
-## 0.9.62 要点
-
-- **参数错误说人话**：坐标越界 / `mode` 拼错 / `button` 不认识 / `text` 为空，现在返回
-  `ok=false, code=invalid_args, reason=…`（以前 raise 会被宿主压成一句
-  「Error executing tool click」，原因全丢，且不会碰设备）。
-- `AI_GUIDE.md` 新增 §1.1a：防误触 `guard` / 开放 `open` 的判断顺序与用法。
-
-## 0.9.61 要点
-
-- **两种控制区模式，AI 自己选**：`mode="guard"`（默认，防误触，避开底部程序坞带/顶部安全边）
-  与 `mode="open"`（开放，不钳位、自担风险，底部最多 98.5%）；`force=True` 是 open 的旧写法。
-  `status.zones` 里直接写明两种模式，返回值带 `mode` / `forced` / `clamped`。
-- 程序坞信号改成「归位前 vs 归位后」比底边那一条，只报「动过」，不猜开关状态。
-
-## 0.9.60 要点
-
-- **空白判据只看正文带**（y 10%–90%）：空笔记/白屏才报 `blank`，备忘录里写一行字不会被误判
-  （0.9.59 两次误伤：稀疏页面、工具栏文字）。
-
-## 0.9.59 要点
-
-- **修 0.9.58 的回归**：给 `type_text` 加输入法护栏时，辅助函数被插在装饰器与函数之间，
-  结果 `type_text` 从工具表里消失、还多出一个私有工具。已修，并新增**工具表契约测试**
-  （19 个关键工具必须在、不许 `_` 开头的工具）。
-
-## 0.9.58 要点
-
-- **打字看得见了**：`type_text` 打完字等画面稳定再截图（此前 16 个字符只返回 "Dai"，
-  AI 会以为丢字再打一遍），并回报 `changed / fresh / frame_age_ms`。
-- **中文输入法自动让路**：打字前 OCR 底部输入法栏，检测到拼音（「拼」/≥2 个汉字块）
-  就先 `ctrl+space` 切英文——此前 `settled check 1111` 会变成 `settle的 check1111`。
-- **白屏/加载中有信号**：`ocr_timeline` 的 `page.blank`（均匀度 ≥92% 且文字 ≤8 块）。
-- `ocr_timeline` 新增时间维度 OCR（`dirty / stable_ms / trust`）与 fast 模式（静态页 0.27 s）。
-- `518` 条单元测试；arm64 与 intel 两个包均签名 + 公证 + staple。
-
-## 0.9.56 要点
-
-- **动作后不再「假没变」**：投屏帧的时间戳是「到达时间」，内容还压在管线里 0.2–0.5 s。
-  现在 click / key 会**等画面内容真的变了**再等转场结束，`changed` 不再把成功判成失败
-  （此前 `click_text` 会因为「没变化」双击图标）；另加 `changed_any_px`，
-  顶部工具栏（Safari 的「+」在 y≈0.07）的动作不会被「跳过顶部 6%」判成没变。
-- **iPad 顶部工具栏点得到**：TR 停车点 0.117 之上原本点不到，现在把停车点临时抬高
-  （按 y 表第一段斜率 + 量一次落点），实测偏 12 px；钳位/近似都写进返回值。
-- **程序坞看得见**：`dock_visible` / `dock_band_px` —— 归位时指针压到底边会拉起程序坞，
-  现在比「屏幕最下面那一条」就能知道，AI 不会再把系统 UI 当成 App 内容。
-- **平板表单不再「看起来没问题」**：`calibration_status` 会直接说「底部 17% 是程序坞带，点不到」。
-- `500` 条单元测试；arm64 与 intel 两个包均签名 + 公证 + staple。
-
-## 0.9.53 要点
-
-- **校准向导里点不到「开始校准」**（0.9.52 回归）：探针卡片让向导正文高了约 100 px，
-  而窗口高度写死、动作栏又排在正文之后 → 整排按钮被挤出窗口（1.0 倍裁 72 px、1.3 倍裁 226 px）。
-  现在动作栏先占底边、窗口按内容定高（上限屏幕高 −120），塞不下就把日志缩到 3 行为止，
-  正文折行跟随窗口宽度；1.0 / 1.15 / 1.3 三档实测按钮都在窗口内。
-- `488` 条单元测试（新增 4 条 GUI 布局回归）；arm64 与 intel 两个包均签名 + 公证 + staple。
-
-## 0.9.49 要点
-
-- **链路抖一下，不再吃掉整轮校准**：板子回 `ok` 只代表报告写进了 BLE，**不代表手机收到**。
-  实测一次 2 秒断链让验证里一个点偏 343 px，26 分钟测出的表被闸门丢弃。现在验证会
-  **单点重测**（偏 > 250 px 先重测一遍），准确率闸门不过时再**整轮重验**一次；
-  表形状类问题不重验。加上已有的命令级重试与断点续校，一共四层容错。
-- **表里没有的那一段改用闭环**：目标被钳住、且被控设备是 iPhone 时，这一段走视觉闭环，
-  不再硬拽回停车点 —— 老档案底部 21% 没映射，也能点中计算器 `=`、备忘录「新建」。
-  iPad 仍保持钳位（那是让开程序坞带）。
-- 实测：用旧表跑完整验证 **中位 9.4 px / 最大 24.8 px**（16 点全过），
-  证明上轮那 343 px 是链路抖动、不是表的精度问题。
-- `456` 条单元测试；arm64 与 intel 两个包均签名 + 公证 + staple。
-
-## 0.9.48 要点（上一版）
-
-- **校准从「必选项」改成「可选项」**：没有表也能干活——AI 会走视觉闭环（移动 → 找指针 →
-  纠正），每次动作多 2–6 秒、精度约 10–40 px；有表时仍是一次开出（5–30 px）。
-  `status.positioning` 会明说用的是哪种；读不到指针时**直接报错，不会盲点**。
-- **iPhone 不再被套上 iPad 的「底部锚定」**：上一轮校准会把底角停车点抬到 y≈0.79，
-  屏幕底部 22% 从此点不中（计算器 `=` 点成 `+`、备忘录「新建」打开旧笔记）。现在按设备形态
-  决定做法，并用闸门拦住「y 表到不了底」的表。
-- **坏表自动修**：老档案里的「内点离群」（本机那张 iPad 表 `BL x=600` 的洞，最坏 246 px）
-  在载入 / 切档案时自动剪掉，只改内存、不动磁盘，`status.table.sanitized` 会列出来。
-- **被控设备拆成 iPhone / iPad 两项**（iPadOS 才有 ⌘Tab），入口搬到**视频上方工具条**；
-  老设置 `ios` 自动迁移为 `iphone`，旧的键盘白/黑名单也一并迁过去。
-- 实测：`450` 条单元测试；arm64 与 intel 两个包均签名 + 公证 + staple。
-
-## 0.9.46 要点（上一版）
-
-- **校准跟着探针 0.2.3 重新对齐**：Pointer Tester 的二维码 `age` 字段修好之后，校准第一次真正
-  用上「真值 + 停稳判断」，也第一次暴露了三个老问题——都修了：
-  - 二维码真值不再被「几何估计」否掉（以前档位越大估得越偏，读数被判可疑后退回帧差，
-    表被剪成残表，实测最坏 265.8 px）；
-  - 表尾平台不再当离群点剪掉（指针顶到边缘的那些档位只会把 0.8 附近的目标推过头）；
-  - 闸门除了中位误差，还要看**单点最大误差**（> 250 px 判失败）和**每个轴的覆盖**
-    （< 40% 判失败），残表写不进去。
-- **实测**：iPhone 13 mini 完整一轮 25 分钟，验证中位 **10.4 px**、最大 **21.1 px**
-  （上一版 9.75 / 107.8），独立复测 4 点 5.8 / 8.3 px。
-- **链路抖动不再让整轮作废**：6 次快速重试之后，最多等 **3 分钟**让板子恢复（每 5 秒探一次、
-  状态行显示进度），一恢复就原地继续。以前状态灯闪一下就终止，回来只剩「开始校准」。
-- 文档：公开发布的措辞改成「发帖或评论」，不点名具体平台；删掉仓库里停在 0.9.34 的旧文档副本。
-
-## 上一版（0.9.43）要点
-
-- **探针读数改用二维码**：OCR 逐行认数字有两个硬伤——指针压住 `PT` 行时**整行读不到**
-  （实测 (0.60,0.23) 连读 3 次全失败），以及**认错数字**（`206.20` 被认成 `286.20`，偏 80 pt，
-  还能通过所有范围检查写进表）。现在 Pointer Tester 在右下角播 160 pt 二维码
-  （纠错等级 H，载荷 `P1,x,y,age,w,h`），整帧编码抗遮挡，一次拿到全部字段。
-- 宿主端**二维码优先**、解不到回落文字 HUD（老探针不受影响）；整帧解二维码 216 ms，
-  文字识别 ~700 ms，解到就不跑文字。
-- 实测对比：指针 x=0.55 文字读成 286.2（错）、二维码 206.2（对）；x=0.60 文字读不到、
-  二维码正常。
-- 想让校准用上，**手机上的 Pointer Tester 也要更新到 0.1.0**。
-
-## 更早（0.9.42）要点
-
-- **点击更准**：目标移动默认拆成 2 段——同样 12 个目标，中位误差 14.5 → **10.7 px**
-  （拆 4 段 9.6 px）。一次大位移走的是指针加速曲线最陡的一段，拆小后每段更线性。
-  归位仍是斜着撞边（靠屏幕边缘钳位）。
-- **探针读数增加合群性闸门**：指针压到 HUD 上时会读不到甚至认错数字（实测 (0.65,0.23)
-  连读 3 次全失败）；现在偏离预期 >0.30 屏宽的读数一律重读、绝不写进表。
-- **修验证口径**：iPhone 底角停车点 y≈0.790，而验证从 0.15–0.85 取目标，
-  到不了的那段被算成误差（中位被顶到 85 px），好表被误丢。现在与移动用同一套钳位。
-- 新增步长/步数对照实验（`QUILEG_CALIB_BENCH=1`，默认关闭）：实测"表抽稀一半"
-  中位只差 4 px、但最大误差 84.7 → 178.1 px——别用减少档位换时间。
-
-## 上一版（0.9.41）要点
-
-- **探针不再"一次抖动判死刑"**：实测一次 OCR 抖动只持续 7–14 秒，旧规则却把探针整轮关掉；
-  现在连续读不到只会**降级**（每采样点仍试 1 次），读到立刻恢复真值。
-- **高度估算有下限**：y 表反推出 < 400 单位的整屏高度时立刻报错并提示「探针可能没启用」，
-  不用拖到顶角才用一句「停车点不在该角上」收场。
-- **失败留帧**：读不到时把那一帧存到数据目录，下次排查有物证。
-- 0.9.40 / 0.9.39 的修复全部保留。
-
-## 上一版（0.9.40）要点
-
-- **修 0.9.39 的校准崩溃**：两处日志调用漏传参数，某一档两次采样都没读到时抛 `TypeError`
-  直接中止整轮；已修，并加了一条扫描源码的测试防止复发。
-- **单帧 OCR 抖动不再作废采样点**：Vision 偶发失败（实测约 7 次 1 次），旧写法一次没读到
-  就丢掉整个采样点；现在每点最多读 4 次，失败快速重试。
-- 修 `AGE` 上限（10 分钟 → 1 天）：空闲久了 AGE 很大，旧上限会误判成「读不到」。
-- 0.9.39 的四组修复全部保留（竖屏探针裁剪、表内点离群、停稳再读、8 MB 板防呆）。
-
-## 上一版（0.9.39）要点
-
-这一版**不改界面、不改操作方式**，修的都是「本来会悄悄出错」的地方。
-
-- **竖屏 iPhone 校准跑到一半失败**：探针读数用的裁剪框原先写死 60% 画面宽，竖屏上会把
-  `PT` / `SIZE` 的最后几位切掉，第 55 个点测完就报「测不到指针」，13 分钟作废。
-  现在裁剪框按屏幕方向给（竖屏整幅、横屏 62%）；探针真的读不到时，界面会写明「改用帧差，
-  精度会下降」，不再静默降级；
-- **表里留洞**：个别内点离群时整段插值会被带歪（实测某台机器偏 246 px，中位误差却看不出来）。
-  新增按单调性清内点，同一张坏表最大误差 246 → 23.8 px；
-- **光标还在飞就读数**：探针 HUD 的 `AGE` 字段此前没被解析，移动要 300–500 ms 而等待只有
-  0.59 s。现在 `AGE < 150 ms` 就再等 180 ms 重读，最多 3 轮，停稳时不额外花时间；
-- **8 MB 板防呆**：刷写前先读板子真实 Flash 容量，与包不符就**在擦写之前**终止，
-  说清两边各多少 MB。此前 8 MB 板用「仅升级固件」刷 16 MB 包会「成功」但配网永远失败；
-- 固件仍是 **0.7.0 / 16 MB 通用镜像**，未变；单测 273 → 301。
-
-**已知限制**：顶角低速档的位移在不同 Mac 之间不可复现（iOS 指针加速的历史依赖），
-换机器重校拿不到完全相同的表；中位误差不是合格证明，这版先保证「表里不留洞」。
-
-## 0.9.34 起的改动（累积）
-
-- **双架构**：Apple 芯片（M1–M4）与 Intel 各一个包，功能一致，装错会提示「需要 Apple 芯片」；
-- **iPad「锁屏」修复**：iPadOS 26 上指针碰到屏幕顶边会拉下通知中心/控制中心（看起来像锁屏）。
-  0.9.33 起归位改为**底部锚定**，不再碰顶边；旧版本升级后请**重新校准一次**；
-- **程序坞不吃点击**：底部目标先抬到画面中部等程序坞收起再下潜；最底部 13% 钳到停车点高度，
-  计算器「=」、键盘底行都能点到；
-- **按键安全**：归位前先松开所有鼠标键，长按/拖拽的松手放进 `finally`，不会再卡键；
-- 其余功能与 0.9.30 相同：双板通用固件 0.7.0、语音桥、AI 活动条、视频网格等。
-
-## 许可
-
-App 免费下载、安装、运行；源码闭源，不随包提供。全文见 [LICENSE](LICENSE)。
-
-第三方组件：**esp32-iphone-agent**（MIT）、**UxPlay**（GPL-3.0）。
-声明与许可全文见官网[许可页](https://jianghui1974.github.io/Quileg-HID/docs/licenses.html)，或安装包内 `THIRD-PARTY-NOTICES.md` 与 `licenses/`。
-每个版本对应的 UxPlay 源码随该版本 Release 一并提供（Intel 版另附 `uxplay-build.patch`）。
-
-## 反馈
-
-- [提交 Issue](https://github.com/jianghui1974/Quileg-HID/issues)
-- 邮件：contact@airdiode.com
+> **检测完成**：2026-10-18
+> **结论**：板子完好可用，全部功能 PASS，无任何硬件故障
+> **固件当前**：**0.7.0 模块化 BLE HID 固件 / 16M 通用镜像**（一份镜像支持 XIAO ESP32S3 Plus 与 ESP32-S3-N16R8，`board=s3-16m`）；源码在 [`firmware/`](firmware/README.md)，legacy 固件保留在 `esp32-iphone-agent-legacy/`。
+> **App 当前**：**0.9.71 / Build 126**（线上 Latest 同版），**两个架构分开出包**：`-arm64`（Apple Silicon）与 `-intel`（Intel x86_64），均已公证 + staple。
+> 版本历史见 [CHANGELOG.md](CHANGELOG.md)，当前状态见 [HANDOVER.md](HANDOVER.md)，Intel 构建见 [docs/INTEL-BUILD.md](docs/INTEL-BUILD.md)。
 
 ---
 
-Quileg 系列自 2024 年第一代起持续迭代，其他作品见 <https://www.godar.cn>。
+## 0. 给新对话的接手说明（先看这里）
+
+> **新对话请先读 [HANDOVER.md](HANDOVER.md)**：当前进度、需求边界、怎么跑起来、下一步（UVC 采集 / 签名/公证）都在那里。
+> **要让 AI 操作 iPhone，先读 [AI_GUIDE.md](AI_GUIDE.md)**：工具语义、坐标/校准、任务配方、故障排查与安全边界。
+> 本文档是板子的**硬件档案**（§1–10）。复刻过程（§11–12）已归档到 [`docs/archive/replication-details.md`](docs/archive/replication-details.md)。
+
+如果你是在新对话里接手，只需要知道这 7 件事：
+
+1. **板子是好板子**，所有功能已验证通过，不用再怀疑硬件。
+2. **BLE 固件用 `CDCOnBoot=cdc` 编译**，运行时会枚举 `/dev/cu.usbmodem*`（当前 `...AF641`，115200）并输出 `DEBUG_SERIAL`；诊断也可以走控制层 `Device.ble_state()` / GUI。
+3. **测试固件编译必须加 `PSRAM=opi`**，否则 8MB PSRAM 用不了；BLE 固件（`hid_bridge`）不依赖 PSRAM，用通用 `esp32s3` FQBN 编译。
+4. **外置天线必须插着**，空着的时候 Wi-Fi 几乎收不到信号。
+5. **原厂固件已备份**在 `backup_original_flash.bin`，随时可还原。
+6. **已完成 `esp32-iphone-agent` 复刻**（细节在归档的 `docs/archive/replication-details.md`），并做出了可用的设备控制层（`control/README.md`）。
+7. **第三方代码有明确边界**：服务端基于 `esp32-iphone-agent`（MIT）改造，AirPlay 接收用 UxPlay（GPL-3.0）；
+   声明与许可全文见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) 与 `licenses/`，随 DMG 分发。
+   **对外表述不要写「零第三方代码 / 全自研」**。
+
+所有测试都已完成，**不需要重跑**。若只是想看板子活着没有：
+
+```bash
+# 服务端状态（需先按 HANDOVER §4 起服务端）
+curl -s http://127.0.0.1:8890/api/status
+
+# 或直接读 BLE 串口（当前端口；换口后以 ls /dev/cu.usbmodem* 为准）
+cd "/Users/jianghui/Documents/XIAO ESP32S3 Plus"
+.venv/bin/python -c "
+import serial,time
+s=serial.Serial('/dev/cu.usbmodem84C7BB70AF641',115200,timeout=1)
+t=time.time()
+while time.time()-t<10: print(s.read(4096).decode('utf8','replace'),end='')
+"
+```
+
+---
+
+## 1. 硬件识别
+
+| 项目 | 读到的值 |
+|---|---|
+| 芯片 | ESP32-S3 (QFN56) rev **v0.2** |
+| 核心 | 双核 Xtensa LX7 @ 240 MHz + LP 协处理器 |
+| 无线 | Wi-Fi 2.4GHz + Bluetooth 5 (LE) |
+| PSRAM | **8 MB**（板载 OPI） |
+| Flash | **16 MB**（SPI quad，3.3V，厂商 ID 0x55 / 设备 0x2018） |
+| 晶振 | 40 MHz |
+| MAC (STA) | `84:C7:BB:70:AF:64` |
+| USB | 原生 USB-Serial/JTAG（**不需要** CH340/CP2102 驱动） |
+| 供电 | USB 总线供电，识别正常 |
+| SDK | ESP-IDF v5.5-1-gb66b5448e0 |
+
+与 XIAO ESP32S3 Plus 官方规格（ESP32-S3R8 + 8MB PSRAM + 16MB Flash）**完全一致**，无缩水、无错料。
+
+> **为什么标配 16 MB Flash**（2026-10 决策）：不是当下功能需要，而是为将来的**板载摄像头兜底**
+> （第三视频源）预留——摄像头驱动 + 帧缓冲需要 3 MB app 分区（`huge_app`），而当前分区表 app 只有
+> 1.25 MB（固件已占 1.17 MB，余量约 10%），8 MB 板放不下。**现阶段**两块板的固件功能等价
+> （同一张分区表），16 MB 的余量尚未兑现。分区、余量与实施清单见
+> [firmware/docs/CAPACITY.md](firmware/docs/CAPACITY.md)。
+
+---
+
+## 2. 测试结果总览
+
+| # | 测试项 | 方法 | 结果 |
+|---|---|---|---|
+| 1 | 芯片识别 | esptool `chip-id` / `flash-id` | ✅ PASS |
+| 2 | Flash 擦除 | 全片 16MB 擦除 | ✅ 7.5 s |
+| 3 | Flash 写入 | 写 870,688 B + hash 校验 | ✅ PASS（1159 kbit/s） |
+| 4 | Flash 读取 | 全片 16MB 回读备份 | ✅ 16,777,216 B，66.5 s |
+| 5 | PSRAM 读写 | 分配 4MB 写入回读比对 | ✅ **0 错误** |
+| 6 | NVS 掉电保存 | 写启动计数，复位后读回 | ✅ PASS（1 → 2） |
+| 7 | Wi-Fi 扫描（无天线） | 每 10 s 复扫 | ⚠️ 仅 1 AP（天线未接） |
+| 8 | Wi-Fi 扫描（接天线） | 5 轮复扫 | ✅ **21~32 AP** |
+| 9 | Wi-Fi 端到端 | 关联 + DHCP + TCP + DNS + HTTP | ✅ **全 PASS** |
+| 10 | USB-CDC 串口 | `Serial` 双向输出 | ✅ PASS |
+| 11 | 用户 LED | GPIO21 低电平有效，1 Hz | ✅ PASS |
+| 12 | 复位电路 | RTS 硬复位重启 | ✅ PASS |
+| 13 | 内存稳定性 | 7+ 轮压力复测 | ✅ heap 无变化，无泄漏 |
+
+---
+
+## 3. 详细测试记录
+
+### 3.1 基础自检（`docs/archive/bring-up/selftest/selftest.ino`）
+
+固件逐项验证并打印报告，实际输出见 `docs/archive/bring-up/serial_boot_log_selftest.txt`：
+
+```
+==================================================
+  XIAO ESP32S3 Plus  |  hardware self test
+==================================================
+  Chip            : ESP32-S3 rev v0.2, 2 core(s)
+  CPU frequency   : 240 MHz
+  Crystal         : 40 MHz
+  Flash size      : 16 MB
+  PSRAM size      : 8.0 MB
+  SDK             : v5.5-1-gb66b5448e0
+  MAC (STA)       : 84:C7:BB:70:AF:64
+  Reset reason    : 11  (USB reset)
+--------------------------------------------------
+  [PASS] PSRAM RW test   (4194304 bytes checked, 0 errors)
+  [PASS] NVS/flash RW    (boot counter = 2, prev = 1)
+  [PASS] Wi-Fi scan      (1 network(s) found)
+  [ OK ] USB-CDC       (this text proves it works)
+  [ ?? ] LED GPIO21     (should be blinking ~1 Hz)
+--------------------------------------------------
+  Free heap: 278384 B   Free PSRAM: 8376248 B
+==================================================
+```
+
+> 注意：这里 Wi-Fi 只扫到 1 个 AP，是**天线未接**导致的，不是故障，详见 3.2。
+
+**PSRAM 测试细节**：分配 4 MB（容量一半），逐字节写入 `(i*7+0xA5)` 再回读比对，0 错误 —— 这说明 8MB PSRAM 完全可用，不是"能识别但坏块"。
+
+**NVS 测试细节**：写入启动计数器后复位，读回值从 1 变 2，证明 Flash 掉电保存正常。
+
+### 3.2 天线对比测试（`docs/archive/bring-up/wifi_survey/wifi_survey.ino`）
+
+首次自检时**没插外置天线**，Wi-Fi 只扫到 1 个 AP。插上 IPEX 外置天线后重测，结果数量级变化：
+
+| 指标 | 未接天线 | 接上天线 |
+|---|---|---|
+| 扫描到的 AP 数 | **1** | **21 ~ 32**（平均 27.4） |
+| 最强信号 | — | **-44 ~ -47 dBm** |
+| 最弱信号 | — | -92 ~ -95 dBm |
+| 最强 AP 跨轮波动 | — | 仅 **3 dB** |
+
+5 轮连续扫描：
+
+```
+轮次   AP数   最强    最弱    最强AP
+1      23    -44     -95    Xiaomi_jianghui
+2      21    -45     -92    Xiaomi_jianghui
+3      32    -45     -94    Xiaomi_jianghui
+4      30    -46     -94    Xiaomi_jianghui
+5      31    -47     -95    Xiaomi_jianghui
+```
+
+**结论**：
+
+- -44 dBm 属于近距离强信号，灵敏度毫无问题。
+- 波动仅 3 dB，说明 IPEX 座子接触良好、无虚接。
+- **这块板子的外置天线接口是必接的**：空着时射频基本断路，会伪装成"只能扫到 1 个网络"的假象，很有迷惑性。以后 Wi-Fi 搜不到网络，第一件事查天线。
+
+原始日志见 `docs/archive/bring-up/wifi_antenna_log.txt`。
+
+### 3.3 Wi-Fi 端到端联网（`docs/archive/bring-up/wifi_connect/wifi_connect.ino`）
+
+连上真实路由器，完整走通 DHCP → TCP → DNS → HTTP：
+
+```
+*** WIFI END-TO-END TEST ***
+  connecting...........
+  [PASS] connected in 3300 ms
+  SSID     : Xiaomi_jianghui
+  BSSID    : 64:09:80:57:B3:3F
+  RSSI     : -45 dBm
+  channel  : 11
+  IP       : 192.168.31.25      <- DHCP 正常
+  gateway  : 192.168.31.1
+  subnet   : 255.255.255.0
+  DNS      : 192.168.31.1
+  MAC(STA) : 84:C7:BB:70:AF:64
+  [PASS] TCP 192.168.31.1:80  connect 13 ms
+  [PASS] DNS www.baidu.com -> 183.240.99.224  (14 ms)
+  [PASS] HTTP GET baidu  status=200  len=29506  40 ms
+```
+
+连续复测（跑到第 16 轮仍稳定）：
+
+| 项目 | 结果 |
+|---|---|
+| 关联耗时 | 3.3 s（首次） |
+| RSSI | -45 ~ -50 dBm |
+| TCP 网关 :80 | 3 ~ 13 ms |
+| DNS 解析 | 0 ~ 14 ms |
+| HTTP GET baidu | status **200**，29506 B，40 ~ 74 ms |
+| 掉线重连 | 未发生 |
+| Free heap | 275728 B **全程一字未变**（无泄漏） |
+
+**这证明收发双向链路、DHCP、ARP、DNS、TCP、HTTP 全链路正常**，Wi-Fi 可以放心用。
+
+原始日志见 `wifi_connect_log.txt`。
+
+---
+
+## 4. 当前板子状态
+
+| 项目 | 状态 |
+|---|---|
+| 当前固件 | `esp32-iphone-agent-legacy/hardware/hid_bridge` 的 **BLE HID 版**（`HID Bridge XXXX`） |
+| 串口 | 正常运行时是 `/dev/cu.usbmodem*`（当前 `...AF641`，115200）；BLE 版用 `CDCOnBoot=cdc` 编译，`DEBUG_SERIAL` 走它 |
+| 供电 | USB-C 接充电器或 Mac（供电/调试串口），不接 iPhone |
+| 无线 | Wi-Fi 由 NVS 配置（app 写入；当前 `Xiaomi_jianghui`），命令连 Mac 的 `7300`；蓝牙同时作为 iPhone 的键鼠 |
+| LED | GPIO21 用户 LED：**常亮** = Wi-Fi + BLE 都连上；**慢闪 1 Hz** = 只有 Wi-Fi；**快闪 4 Hz** = 只有 BLE；**灭** = 都没连。另一颗是充电指示灯，不受 GPIO 控制 |
+| 上电输出延迟 | 测试固件实测约 2.5 s；BLE 版可从串口启动日志核对 |
+
+> 历史记录：刷 BLE 之前，板子跑 `wifi_connect` 测试固件，串口为 `/dev/cu.usbmodem2101`。那段流程见 §7 与 §11。
+
+---
+
+## 5. 环境与工具链
+
+| 工具 | 版本 / 位置 |
+|---|---|
+| 主机 | macOS 27.0.1，arm64（Apple Silicon） |
+| Python | 3.13.14（工作区内 `.venv`） |
+| esptool | **v5.6.0**（装在 `.venv`，用 `.venv/bin/python -m esptool`） |
+| arduino-cli | **1.5.1**（Homebrew，`/opt/homebrew/bin/arduino-cli`） |
+| esp32 core | **3.3.0**（已装好，可离线编译） |
+| PlatformIO | 6.1.19（已装，但本次未使用） |
+| FQBN | `esp32:esp32:XIAO_ESP32S3_Plus`（测试固件；BLE 固件用 `esp32:esp32:esp32s3:...`，见 HANDOVER §4） |
+| 编译选项 | `PSRAM=opi`（**测试固件必须**；BLE 固件不用 PSRAM） |
+
+核心板参数（来自 boards.txt）：`usb_mode=0`、`cdc_on_boot=1`、`flash_size=16MB`、`partitions=ffat`、`psram_type=qspi`（选 `PSRAM=opi` 时覆盖为 opi 并定义 `BOARD_HAS_PSRAM`）。
+
+---
+
+## 6. 文件清单
+
+> 只列**现在还在用**的。装机期的固件 sketch、编译产物、串口日志都在
+> [`docs/archive/bring-up/`](docs/archive/bring-up/)；完整文档地图见 [HANDOVER.md](HANDOVER.md) §9。
+
+| 文件 / 目录 | 说明 |
+|---|---|
+| `backup_original_flash.bin` | **原厂固件完整备份**，16,777,216 B（要还原见 §9） |
+| `Seeed Studio XIAO ESP32-S3 Plus.pdf` | 官方数据手册（SKU 102010671，2026-09-20 版），Plus 版参数以此为准 |
+| `VERSION` / `BUILD_NUMBER` | 版本号唯一来源（出包脚本与 App 都读它） |
+| `HANDOVER.md` | **新对话入口**：当前状态、下一步、发版流程、边界 |
+| `CHANGELOG.md` | 哪版改了什么（0.9.27–0.9.71） |
+| `PITFALLS.md` | 踩坑与经验库（按屏幕/输入/坐标/校准/发布分类） |
+| `AI_GUIDE.md` | **给 AI 的操作手册**：工具语义、坐标/校准、任务配方、排障、安全边界 |
+| `MCP-SETUP.md` | **客户可见**的 MCP 接入说明（随 DMG 分发） |
+| `DELIVERY.md` / `新板安装SOP.md` | 客户交付验收 / 新板批量装机 |
+| `firmware/` | 固件源码与构建（`firmware/build.sh s3_16m_universal`） |
+| `esp32-iphone-agent-legacy/` | legacy 架构（Mac 端服务 + 板子 **BLE HID**），控制层的底座 |
+| `control/` | **设备控制层**：`device.py`（点击/键盘/校验/恢复）、`calibration.py`（校准）、`mcp_server.py`（MCP 工具）；说明见 `control/README.md` |
+| `app/` | **Mac 控制端**：实时镜像 + 点击/输入/自愈 + 配网 + 校准向导；见 `app/README.md` |
+| `app/firmware/` | **内置固件镜像**（`factory-16m.bin` / `app-16m.bin`）+ `manifest.json`（含 sha256） |
+| `pointer-tester/` | **校准探针**：`probe/`（可装到 iPhone/iPad，把指针真值打在屏幕上）+ `web/`（网页版）；定位与实测见归档的 `docs/archive/pointer-tester/` |
+| `packaging/` | 出包脚本（`build_release.sh` / `HIDBridge.spec` / UxPlay 打包） |
+| `tools/` | 辅助脚本：`ui_check.py`（界面检查）、`calib_check.py`（免 GUI 跑校准）、`feedback_mail.py`（反馈邮箱） |
+| `artifacts/` | 实测截图：校准画布、各角停车点、计算器演示、键盘输入验证 |
+| `.venv/` | Python 虚拟环境（含 esptool + pyserial） |
+
+---
+
+## 7. 常用操作
+
+### 7.1 读串口
+
+> 适用于当前 BLE 固件（`CDCOnBoot=cdc`）和自检/`wifi_connect` 等测试固件。只有构建时关掉 CDC，才会没有串口。
+
+```bash
+cd "/Users/jianghui/Documents/XIAO ESP32S3 Plus"
+.venv/bin/python -c "
+import serial,time
+s=serial.Serial('/dev/cu.usbmodem2101',115200,timeout=1)
+t=time.time()
+while time.time()-t<15: print(s.read(4096).decode('utf8','replace'),end='')
+"
+```
+
+### 7.2 硬复位并抓启动日志（能抓到开头的自检报告）
+
+> BLE 固件同样有串口输出（`DEBUG_SERIAL`）；本脚本用于测试固件时能抓到完整自检报告。
+
+```bash
+.venv/bin/python boot_capture.py 30
+```
+
+### 7.3 编译 + 烧录
+
+```bash
+# 以归档里的 selftest 为例（docs/archive/bring-up/selftest），换成 wifi_survey / wifi_connect 同理
+arduino-cli compile -b esp32:esp32:XIAO_ESP32S3_Plus:PSRAM=opi \
+  --output-dir .tmp/build-selftest docs/archive/bring-up/selftest
+arduino-cli upload  -b esp32:esp32:XIAO_ESP32S3_Plus:PSRAM=opi -p /dev/cu.usbmodem2101 \
+  --input-dir .tmp/build-selftest docs/archive/bring-up/selftest
+```
+
+### 7.4 手动进入下载模式（烧录失败时用）
+
+```bash
+.venv/bin/python -c "
+import serial,time
+s=serial.Serial('/dev/cu.usbmodem2101',115200,timeout=0.2)
+s.setDTR(False); s.setRTS(True); time.sleep(0.3); s.setRTS(False); s.setDTR(False)
+time.sleep(0.3); s.close()
+"
+```
+
+或者最原始的办法：**按住 BOOT 键，重新插拔 USB-C 线**。
+
+### 7.5 读芯片信息
+
+```bash
+.venv/bin/python -m esptool -p /dev/cu.usbmodem2101 --before no-reset chip-id
+.venv/bin/python -m esptool -p /dev/cu.usbmodem2101 --before no-reset flash-id
+```
+
+---
+
+## 8. 踩坑清单（重要，能省很多时间）
+
+1. **PSRAM 必须选 OPI**
+   编译要加 `PSRAM=opi`，否则 8MB PSRAM 用不了（板子是 ESP32-S3R8， Octal PSRAM）。
+
+2. **原生 USB 的 DTR/RTS 极性与 UART 桥反相**
+   用 pyserial 复位时：`DTR=False` → 进**下载模式**；`DTR=True` → 正常启动。
+   这和 CH340/CP2102 的习惯是反的，很容易踩。
+
+3. **不要只看 PID 判断是否在下载模式**
+   ROM 下载模式是 `303A:1001`，但 app 以「硬件 CDC」模式运行时**也是** `303A:1001`。
+   唯一可靠的判据是：**看有没有串口输出**。
+
+4. **外置天线必接**
+   不接天线时 Wi-Fi 只扫到 1 个 AP，会严重误导判断。
+
+5. **烧录后偶尔要拔插一次 USB**
+   RTS 软复位不一定能让 app 跑起来；用 `boot_capture.py` 里的 esptool 硬复位更可靠。
+
+6. **端口名可能变**
+   目前是 `/dev/cu.usbmodem2101`，重新枚举后可能是别的编号，用 `ls /dev/cu.usbmodem*` 确认。
+
+7. **首次插上电脑可能完全看不到设备**
+   这是**正常的** —— 原厂固件没启用 USB-CDC。按住 BOOT+RST 进下载模式就能看到。
+
+---
+
+## 9. 恢复原厂固件
+
+擦除前已备份完整 16 MB 镜像。原分区布局（标准 ESP-IDF 风格）：
+
+```
+0x00009000    20 KB   nvs
+0x0000e000     8 KB   otadata
+0x00010000  3264 KB   app0
+0x00340000  3264 KB   app1
+0x00670000  1536 KB   spiffs
+0x007f0000    64 KB   coredump
+```
+
+恢复步骤：
+
+```bash
+# 1. 进下载模式（按住 BOOT 拔插 USB，或用 7.4 的脉冲）
+# 2. 整片写回
+.venv/bin/python -m esptool -p /dev/cu.usbmodem2101 write-flash 0 backup_original_flash.bin
+```
+
+---
+
+## 10. 注意事项与待办
+
+- ⚠️ **`docs/archive/bring-up/wifi_connect/wifi_connect.ino` 里有明文 Wi-Fi 密码**。如果这个目录要进 git 或分享给别人，务必先清掉密码（或改成从宏/外部文件读取）。
+- ⚠️ **外置天线务必保持连接**，拔掉后 Wi-Fi 基本不可用。
+- ℹ️ 板子可以放心当开发板用，随时可以擦除重刷。
+- ℹ️ 若不需要备份，`backup_original_flash.bin` 可删除以省 16 MB。
+- ℹ️ 板子当前占用路由器一个 DHCP 地址（`192.168.31.25`），刷自己的固件后会自动释放。
+- ℹ️ 换 Wi-Fi 不用重刷固件：板子 USB 连 Mac → app「网络 → Wi-Fi / 服务器配置…」→ 写入并应用。
+- ℹ️ 下一步计划：UVC 采集后端、DMG 签名/公证、闭环纠偏（见 `HANDOVER.md` §6）。
+
+---
+
+## 11. 复刻记录（已归档）
+
+早期为了验证「Plus 版能不能跑 `esp32-iphone-agent`」做了完整复刻：兼容性核对、刷写命令、
+上游已知限制、AP/STA 网络模式、设备验证矩阵、设备控制层的由来 —— **原样**归档在
+[`docs/archive/replication-details.md`](docs/archive/replication-details.md)。
+结论只有一句：**Plus 版可用**，复刻成果就是今天的 `control/` 与 `esp32-iphone-agent-legacy/`。
+
+---
+
+## 13. MCP / AI 接入
+
+把控制层暴露成 MCP tools，AI 宿主（DSH、Claude Desktop、Cursor 等）可以直接"看屏幕 + 点 + 验证"：
+
+| 工具 | 作用 |
+|---|---|
+| `app_status` | Mac App 自身状态（版本/模式/固件/设置/日志路径） |
+| `app_logs` | 读 App 运行日志（脱敏，支持级别/时间/关键字） |
+| `app_diagnostics` | 一键诊断报告，可直接贴给用户 |
+| `app_docs` | 这一版的随包文档（手册/踩坑/发行说明），AI 升级后自动跟上 |
+| `app_update` | 有没有新版 + 这版改了什么 + 下载页（AI 只提醒，下载/安装由用户点浏览器） |
+| `calibration_status` | 当前校准表（profile/时间/延迟/refs；`resume` = 未完成的校准进度） |
+| `calibration_request` | 请求用户打开校准向导（人工确认） |
+| `calibration_reload` | 用户校准完后重载新表 |
+| `status` | 板子 / 投屏 / 校准 / BLE 状态 |
+| `screenshot` | 500×1080 JPEG，可选 10×10 网格 |
+| `ocr` | 识别屏幕文字，返回每块文字 + 归一化坐标，可直接点 |
+| `click_text` | OCR 找到文字并点击，自动处理图标标签偏移 |
+| `click(x,y)` | 归一化坐标点击，返回 `changed` + 新截图 |
+| `move(x,y)` | 只移动不点击 |
+| `type_text(text)` | 仅 ASCII；中文用拼音 + OCR/视觉点选 |
+| `key(combo)` | ⌘H、⌘Space、Esc、方向键等白名单 |
+| `scroll(dy)` | 垂直滚动 |
+
+- 源码：`control/mcp_server.py`；stdio 直接 `python control/mcp_server.py`；
+- DSH 已接入 `~/.dsh/profiles/desktop/cordis.patch.yml`，工具名是 `mcp__iphone__*`；
+- 打包版：`HIDBridge.app/Contents/MacOS/HIDBridge --mcp`，已实测可被 MCP client 拉起，**不需要外部 Python/MCP SDK**；
+- 详细设计、DSH 配置、安全边界与打包说明见 [`docs/archive/MCP.md`](docs/archive/MCP.md)（内部研究稿，已归档）。
+
+> 校准以 `control/calib.json` 的 `profiles` 为准；换 iPhone / 指针大小 / 分辨率后要重测。
+> 诊断类工具（`app_*`）只读且日志已脱敏，可作为排障第一步。
+
+---
+
+## 附录：关键原始日志位置
+
+| 日志 | 文件 |
+|---|---|
+| 自检报告（完整格式化输出） | `docs/archive/bring-up/serial_boot_log_selftest.txt` |
+| 天线对比（5 轮扫描，含每个 AP 的 RSSI） | `wifi_antenna_log.txt` |
+| 联网测试（含 7 轮复测明细） | `wifi_connect_log.txt` |
