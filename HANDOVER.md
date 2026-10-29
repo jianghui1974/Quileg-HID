@@ -8,17 +8,17 @@
 
 ---
 
-## 0. 一句话状态（2026-10-29 14:10）
+## 0. 一句话状态（2026-10-29 15:05）
 
 | 项 | 值 |
 |---|---|
-| App | **0.9.70（Build 125）**，`/Applications/Quileg HID.app`，线上 Latest 同版 |
+| App | **0.9.71（Build 126）**，`/Applications/Quileg HID.app`，线上 **v0.9.71 已是 Latest**（双架构 DMG 均公证 + staple，旧版已标 pre-release） |
 | 固件 | **0.7.0**，`s3_16m_universal` 一份镜像带双板（XIAO + N16R8） |
-| 探针 | **Pointer Tester 0.2.5 (12)** —— 粗测模式 ⌘I / HUD 开关 ⌘K / 二维码开关 ⌘B |
+| 探针 | **Pointer Tester 0.2.5 (12)** —— 粗测模式 ⌘I / HUD 开关 ⌘K / 二维码开关 ⌘B；**已上传 TestFlight** |
 | 被控设备 | iPhone 500×1080 |
 | 校准表 | `airplay:500x1080`，`measured_at 2026-10-29 13:36:12`、`verified: true`、`positioning=table` |
 | 校准质量 | 验证**中位 6.8 px / 最大 19.9 px**（16 个随机点；旧表是 11.8 / 103.8） |
-| 源码 | **有未提交改动**（`git status` 见 §5 末）；`VERSION` 仍 0.9.70 / `BUILD_NUMBER` 125 |
+| 源码 | 本地**有未提交改动**；`VERSION` 0.9.71 / `BUILD_NUMBER` 126。**git 推不上去**，远端只同步了 `README/CHANGELOG/HANDOVER/PITFALLS`（走 `gh api`），代码本身没推 |
 
 ## 1. 开工 30 秒
 
@@ -48,11 +48,11 @@ calibration_status()  → resume 为空 = 没有被打断的校准；calibrating
 
 | 版本 | 一句话 |
 |---|---|
-| 0.9.66 | 取消校准立刻停（实测 18 ms）；OCR 改成开关式实时识别；macOS 13 上 UVC 不再每秒重启 |
 | 0.9.67 | 新装不再装「别人家的」种子表；试用表 + 10 s 快速自检；可恢复初始设置 |
 | 0.9.68 | 没有校准表时不再盖卡片（那条「弹窗和视频抢前台」的根因）；平轴 20 s 内判；删表即失效 |
 | 0.9.69 | 轴的「覆盖不足」当场判（与验证同一个 0.40 阈值） |
 | 0.9.70 | 坏轴先记账、四角量完再对角镜像（「续校从 TL 继续」不再必然失败） |
+| 0.9.71 | 探针双模式（粗测/精细）+ 删文字 HUD 后 TL 不再镜像，验证中位 6.8 / 最大 19.9 px |
 
 ## 3. 校准：现在这套口径
 
