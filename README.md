@@ -3,7 +3,7 @@
 > **检测完成**：2026-10-18
 > **结论**：板子完好可用，全部功能 PASS，无任何硬件故障
 > **固件当前**：**0.7.0 模块化 BLE HID 固件 / 16M 通用镜像**（一份镜像支持 XIAO ESP32S3 Plus 与 ESP32-S3-N16R8，`board=s3-16m`）；源码在 [`firmware/`](firmware/README.md)，legacy 固件保留在 `esp32-iphone-agent-legacy/`。
-> **App 当前**：**0.9.73 / Build 128**（线上 Latest 同版），**两个架构分开出包**：`-arm64`（Apple Silicon）与 `-intel`（Intel x86_64），均已公证 + staple。
+> **App 当前**：**0.9.74 / Build 129**（线上 Latest 同版），**两个架构分开出包**：`-arm64`（Apple Silicon）与 `-intel`（Intel x86_64），均已公证 + staple。
 > 版本历史见 [CHANGELOG.md](CHANGELOG.md)，当前状态见 [HANDOVER.md](HANDOVER.md)，Intel 构建见 [docs/INTEL-BUILD.md](docs/INTEL-BUILD.md)。
 
 ---
@@ -237,7 +237,7 @@ while time.time()-t<10: print(s.read(4096).decode('utf8','replace'),end='')
 | `Seeed Studio XIAO ESP32-S3 Plus.pdf` | 官方数据手册（SKU 102010671，2026-09-20 版），Plus 版参数以此为准 |
 | `VERSION` / `BUILD_NUMBER` | 版本号唯一来源（出包脚本与 App 都读它） |
 | `HANDOVER.md` | **新对话入口**：当前状态、下一步、发版流程、边界 |
-| `CHANGELOG.md` | 哪版改了什么（0.9.27–0.9.73） |
+| `CHANGELOG.md` | 哪版改了什么（0.9.27–0.9.74） |
 | `PITFALLS.md` | 踩坑与经验库（按屏幕/输入/坐标/校准/发布分类） |
 | `AI_GUIDE.md` | **给 AI 的操作手册**：工具语义、坐标/校准、任务配方、排障、安全边界 |
 | `MCP-SETUP.md` | **客户可见**的 MCP 接入说明（随 DMG 分发） |
