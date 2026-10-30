@@ -18,7 +18,7 @@
 | 被控设备 | **iPhone SE 608×1080（直角屏）** 与 iPhone 500×1080（圆角）**两台并存**，`profiles` 里各一张表，按画面尺寸自动切换 |
 | 校准表 | `airplay:608x1080`（SE，`stops=minimal`，10:56 校准）+ `airplay:500x1080`（圆角，`stops=full`，12:45 校准） |
 | 校准质量 | **SE 1.0 px 中位**（120 点持出，最大 4.5）；**圆角 6.25 px 中位 / p90 39**（30 点持出）—— 圆角的瓶颈是曲线饱和，见 §3.4 |
-| 源码 | `VERSION 0.9.76 / BUILD 131`，**工作区干净**，HEAD `76908d0`。**git 推不上去**，远端只同步 `README/CHANGELOG/HANDOVER/PITFALLS` + `docs*/`（走 `gh api`），代码本身没推 |
+| 源码 | `VERSION 0.9.76 / BUILD 131`，**工作区干净**（HEAD 以 `git log -1` 为准）。**git 推不上去**，远端只同步 `README/CHANGELOG/HANDOVER/PITFALLS` + `docs*/`（走 `gh api`），代码本身没推 |
 | 备份 | `backups/repo-v0.9.76.bundle`（唯一异地副本），锚点见 `backups/RESTORE.md` |
 
 ## 1. 开工 30 秒
