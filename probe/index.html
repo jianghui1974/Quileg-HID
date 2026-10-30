@@ -56,6 +56,17 @@
     background: #fff; padding: 6px; border-radius: 4px;
     pointer-events: none;
   }
+  /* 粗测令牌（探针 0.2.5 的粗测）：亮色圆角块 + 大字符，跟着指针但绝不盖住它
+     —— 系统白点那条信道要留着 */
+  #token {
+    position: fixed; left: 0; top: 0; width: 92px; height: 92px;
+    border-radius: 22px; display: none; pointer-events: none;
+    align-items: center; justify-content: center;
+    font-size: 56px; font-weight: 800; color: #111; z-index: 2;
+  }
+  /* 粗测 = 纯黑画布：网格、二维码、读数、提示全收起来（和原生探针同一口径） */
+  body.coarse #grid, body.coarse #qr, body.coarse #hud,
+  body.coarse #hint, body.coarse #ver, body.coarse #blink { display: none !important; }
   #ver {
     position: fixed; left: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 6px);
     font-size: 10px; line-height: 1.2; padding: 2px 6px; border-radius: 3px;
@@ -89,11 +100,13 @@
   请点「分享 → 添加到主屏幕」，从主屏幕图标打开再校准。
 </div>
 <div id="blink"></div>
-<div id="ver">probe-web v5 · payload 7 字段</div>
+<div id="token">A</div>
+<div id="ver">probe-web v6 · payload 7 字段 · ⌘I 粗测 / ⌘K 读数 / ⌘B 二维码</div>
 <div id="hint">
   先<b>分享 → 添加到主屏幕</b>再打开（独立窗口才能全屏、坐标才对得上）。<br>
   状态栏时钟/电池会留在顶部（网页版去不掉），HUD 已避开它。<br>
   如果 X/Y 一直是「—」：说明这个浏览器没把指针 hover 事件交给网页。<br>
+  接硬件键盘时：<b>⌘I</b> 粗测/精细、<b>⌘K</b> 显示/隐藏读数、<b>⌘B</b> 二维码（宿主也这么切）。
   <b>已知限制</b>：独立窗口的视口比屏幕矮约 50 pt，<b>屏幕最底部 6% 收不到 hover</b>
   （iPhone 375×812 实测：y&gt;0.93 就读不到）。日常定位/验证够用；
   <b>校准</b>请用原生 App（它没有这条死区）。
@@ -129,6 +142,18 @@
   var pointerType = '—';
   var idleAfter = 900;      // 超过这么久没有事件 → IDLE（原生探针也是这个量级）
 
+  // 模式（原生探针 0.2.5 的两档）：fine = 网格 + 二维码 + 读数；coarse = 纯黑 + 令牌。
+  // 宿主用 ⌘I 切档、并**读回画面确认**；网页版以前完全不认键，宿主一切模式就卡在这里。
+  var mode = 'fine';
+  var hudVisible = true;    // 网页版默认显示读数（原生默认关：那块 HUD 正压着 TL 角）
+  var qrVisible = true;
+  var everHovered = false;  // 收到过 hover 才画令牌（和原生一致）
+  var tokenIndex = 0;
+  var tokenAlphabet = 'ABCDEFGH';
+  var tokenColors = ['#59eda1', '#ffb847', '#73c7ff', '#ff738c',
+                     '#c79eff', '#8cffe6', '#fff273', '#99ff80'];
+  var tokenEl = el('token');
+
   // 屏幕点尺寸：**按当前方向**取。iPad 横屏实测 `screen.width/height` 仍是竖屏的
   // 820x1180，而视口是 1180x788 —— 直接用会把载荷里的 w/h 写反（x 被除小 1.44 倍）。
   function screenSize() {
@@ -154,12 +179,15 @@
     g.clearRect(0, 0, c.width, c.height);
     g.strokeStyle = 'rgba(120,130,120,.35)';
     g.lineWidth = 1;
-    var step = Math.max(48, Math.round(window.innerWidth / 8));
-    for (var x = step; x < window.innerWidth; x += step) {
-      g.beginPath(); g.moveTo(x + .5, 0); g.lineTo(x + .5, window.innerHeight); g.stroke();
+    // **10 等分**（和原生探针一致）：宿主靠「i/10 处的亮线」判「这是精细画布」，
+    // 以前按 8 等分画，一旦二维码被关掉宿主就认不出精细模式。
+    for (var i = 1; i < 10; i++) {
+      var gx = window.innerWidth * i / 10;
+      g.beginPath(); g.moveTo(gx + .5, 0); g.lineTo(gx + .5, window.innerHeight); g.stroke();
     }
-    for (var y = step; y < window.innerHeight; y += step) {
-      g.beginPath(); g.moveTo(0, y + .5); g.lineTo(window.innerWidth, y + .5); g.stroke();
+    for (var j = 1; j < 10; j++) {
+      var gy = window.innerHeight * j / 10;
+      g.beginPath(); g.moveTo(0, gy + .5); g.lineTo(window.innerWidth, gy + .5); g.stroke();
     }
   }
   drawGrid();
@@ -185,8 +213,10 @@
     prevT = t;
     last = { x: x, y: y, t: performance.now() };
     count += 1;
+    everHovered = true;
     pointerType = e.pointerType || (e.type.indexOf('pointer') === 0 ? '?' : 'mouse');
     blink.classList.add('on');
+    placeToken();
   }
   ['pointermove', 'mousemove', 'pointerover', 'mouseover', 'pointerrawupdate']
     .forEach(function (name) {
@@ -203,6 +233,9 @@
   function payloadText(age) {
     var size = screenSize();
     var w = size[0], h = size[1];
+    // 粗测的载荷是**静态**的 `P2,C,<w>,<h>`（不带指针坐标）：
+    // 粗测靠帧差找指针，二维码要是跟着指针刷，右下角那块就成了噪声源。
+    if (mode === 'coarse') { return 'P2,C,' + w + ',' + h; }
     var x = last ? Math.round(last.x * 100) / 100 : 0;
     var y = last ? Math.round(last.y * 100) / 100 : 0;
     // 没有 hover 过就给一个“很久以前”的 AGE（和原生探针的哨兵一致）
@@ -238,6 +271,62 @@
     }
   }
 
+  // ---- 模式：⌘I 粗测/精细、⌘K 读数、⌘B 二维码（和原生探针 0.2.5 同一套语义） ----
+
+  // 令牌：偏移 75 px 放在指针**旁边**（象限翻转避免贴边被裁），绝不盖住白点。
+  function placeToken() {
+    if (!tokenEl) { return; }
+    if (mode !== 'coarse' || !everHovered || !last) { tokenEl.style.display = 'none'; return; }
+    var sw = window.innerWidth, sh = window.innerHeight;
+    var off = 75, half = 46;
+    var tx = last.x + off, ty = last.y + off;
+    if (tx + half > sw) { tx = last.x - off; }
+    if (ty + half > sh) { ty = last.y - off; }
+    tx = Math.min(Math.max(tx, half), Math.max(half, sw - half));
+    ty = Math.min(Math.max(ty, half), Math.max(half, sh - half));
+    tokenEl.style.left = (tx - half) + 'px';
+    tokenEl.style.top = (ty - half) + 'px';
+    tokenEl.style.background = tokenColors[tokenIndex % tokenColors.length];
+    tokenEl.textContent = tokenAlphabet.charAt(tokenIndex % tokenAlphabet.length);
+    tokenEl.style.display = 'flex';
+  }
+
+  function applyMode() {
+    var coarse = (mode === 'coarse');
+    document.body.classList.toggle('coarse', coarse);
+    el('hud').style.display = (hudVisible && !coarse) ? '' : 'none';
+    el('qr').style.display = qrVisible ? '' : 'none';
+    placeToken();
+  }
+
+  function toggleMode() {
+    mode = (mode === 'coarse') ? 'fine' : 'coarse';
+    // 二维码跟着模式走（原生同一口径）：粗测默认关，切回精细自动打开
+    qrVisible = (mode !== 'coarse');
+    lastQrText = '';            // 逼二维码立刻换载荷（P1 ↔ P2）
+    applyMode();
+  }
+  function toggleHUD() { hudVisible = !hudVisible; applyMode(); }
+  function toggleQR() { qrVisible = !qrVisible; applyMode(); }
+
+  // 键位要和宿主发的一致。再兜一层「裸键」：HID 板偶尔吞掉修饰键
+  // （原生探针的 pressesBegan 兜底就是同一个原因）。
+  window.addEventListener('keydown', function (e) {
+    var k = (e.key || '').toLowerCase();
+    var bare = !e.metaKey && !e.ctrlKey && !e.altKey;
+    if (k === 'i' && (e.metaKey || bare)) { e.preventDefault(); toggleMode(); }
+    else if (k === 'k' && (e.metaKey || bare)) { e.preventDefault(); toggleHUD(); }
+    else if (k === 'b' && (e.metaKey || bare)) { e.preventDefault(); toggleQR(); }
+    else if (bare && k === 'c') { e.preventDefault(); toggleMode(); }
+    else if (bare && k === 'd') { e.preventDefault(); toggleHUD(); }
+  }, true);
+
+  // 令牌 0.4 s 换一次字母/颜色（人眼看得见它在动，宿主只看「动没动」）
+  setInterval(function () {
+    tokenIndex = (tokenIndex + 1) % tokenAlphabet.length;
+    placeToken();
+  }, 400);
+
   function tick() {
     el('view').textContent = Math.round(window.innerWidth) + ' x ' + Math.round(window.innerHeight)
         + (viewShort() ? ' ⚠' : '');
@@ -262,13 +351,14 @@
     gapEl.textContent = gap === null ? '—' : gap.toFixed(1) + ' ms';
     ageEl.textContent = age === null ? '—' : Math.round(age) + ' ms';
     ptypeEl.textContent = pointerType;
-    if (now - lastQrAt > 80) {
+    if (qrVisible && now - lastQrAt > 80) {
       lastQrAt = now;
       drawQr(payloadText(age));
     }
     if (age !== null && age > 250) { blink.classList.remove('on'); }
     requestAnimationFrame(tick);
   }
+  applyMode();
   requestAnimationFrame(tick);
 
   // Service Worker：装了主屏幕后离线也能开（file:// 或 http 下会静默失败，不影响使用）
