@@ -103,12 +103,13 @@
 </div>
 <div id="blink"></div>
 <div id="token">A</div>
-<div id="ver">probe-web v6.1 · payload 7 字段</div>
+<div id="ver">probe-web v6.2 · payload 7 字段</div>
 <div id="hint">
   <span class="tab-only">先<b>分享 → 添加到主屏幕</b>再打开（独立窗口才能全屏、坐标才对得上）。<br></span>
   状态栏时钟/电池会留在顶部（网页版去不掉），HUD 已避开它。<br>
   如果 X/Y 一直是「—」：说明这个浏览器没把指针 hover 事件交给网页。<br>
-  接硬件键盘时：<b>⌘I</b> 粗测/精细、<b>⌘K</b> 显示/隐藏读数、<b>⌘B</b> 二维码（宿主也这么切）。
+  <b>读数默认收起</b>（它会盖住左上角）：轻点左上角，或按 <b>⌘K</b> 打开。<br>
+  接硬件键盘时：<b>⌘I</b> 粗测/精细、<b>⌘K</b> 读数、<b>⌘B</b> 二维码（宿主也这么切）。
   <b>已知限制</b>：独立窗口的视口比屏幕矮约 50 pt，<b>屏幕最底部 6% 收不到 hover</b>
   （iPhone 375×812 实测：y&gt;0.93 就读不到）。日常定位/验证够用；
   <b>校准</b>请用原生 App（它没有这条死区）。
@@ -147,7 +148,7 @@
   // 模式（原生探针 0.2.5 的两档）：fine = 网格 + 二维码 + 读数；coarse = 纯黑 + 令牌。
   // 宿主用 ⌘I 切档、并**读回画面确认**；网页版以前完全不认键，宿主一切模式就卡在这里。
   var mode = 'fine';
-  var hudVisible = true;    // 网页版默认显示读数（原生默认关：那块 HUD 正压着 TL 角）
+  var hudVisible = false;   // 默认收起，和原生 0.2.5 一致：那块 HUD 正压着 TL 角
   var qrVisible = true;
   var everHovered = false;  // 收到过 hover 才画令牌（和原生一致）
   var tokenIndex = 0;
@@ -310,6 +311,15 @@
   }
   function toggleHUD() { hudVisible = !hudVisible; applyMode(); }
   function toggleQR() { qrVisible = !qrVisible; applyMode(); }
+
+  // 没有硬件键盘时怎么开读数：**轻点左上角**（HUD 自己就长在那儿，位置直觉一致）
+  window.addEventListener('pointerdown', function (e) {
+    if (mode === 'coarse') { return; }
+    if (e.clientX < window.innerWidth * 0.28 && e.clientY < window.innerHeight * 0.12) {
+      hudVisible = !hudVisible;
+      applyMode();
+    }
+  }, true);
 
   // 键位要和宿主发的一致。再兜一层「裸键」：HID 板偶尔吞掉修饰键
   // （原生探针的 pressesBegan 兜底就是同一个原因）。
