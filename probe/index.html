@@ -36,10 +36,12 @@
   #state { color: #6f6; }
   #state.idle { color: #bbb; }
   #hint {
-    position: fixed; left: 14px; right: 176px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 26px);
-    font-size: 12px; line-height: 1.5; color: #666; pointer-events: none;
+    position: fixed; left: 14px; right: 172px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 22px);
+    font-size: 11.5px; line-height: 1.45; color: #666; pointer-events: none;
   }
+  /* 独立窗口（加到主屏幕）里，「添加到主屏幕」那段是废话 */
+  body:not(.tab) .tab-only { display: none; }
   #hint b { color: #999; font-weight: 600; }
   #warn {
     position: fixed; left: 0; right: 0;
@@ -101,9 +103,9 @@
 </div>
 <div id="blink"></div>
 <div id="token">A</div>
-<div id="ver">probe-web v6 · payload 7 字段 · ⌘I 粗测 / ⌘K 读数 / ⌘B 二维码</div>
+<div id="ver">probe-web v6.1 · payload 7 字段</div>
 <div id="hint">
-  先<b>分享 → 添加到主屏幕</b>再打开（独立窗口才能全屏、坐标才对得上）。<br>
+  <span class="tab-only">先<b>分享 → 添加到主屏幕</b>再打开（独立窗口才能全屏、坐标才对得上）。<br></span>
   状态栏时钟/电池会留在顶部（网页版去不掉），HUD 已避开它。<br>
   如果 X/Y 一直是「—」：说明这个浏览器没把指针 hover 事件交给网页。<br>
   接硬件键盘时：<b>⌘I</b> 粗测/精细、<b>⌘K</b> 显示/隐藏读数、<b>⌘B</b> 二维码（宿主也这么切）。
