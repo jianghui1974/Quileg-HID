@@ -20,7 +20,7 @@
 | 校准质量 | **SE 1.0 px 中位**（120 点持出，最大 4.5）；**圆角 6.25 px 中位 / p90 39**（30 点持出）—— 圆角的瓶颈是曲线饱和，见 §3.4 |
 | 源码 | `VERSION 0.9.78 / BUILD 133`，**工作区干净**（HEAD 以 `git log -1` 为准）。**git 推不上去**，远端只同步 `README/CHANGELOG/HANDOVER/PITFALLS` + `docs*/`（走 `gh api`），代码本身没推 |
 | 录制 | **0.9.79 起已发布**：环形录制 + 按窗口导出 + 节目音（3 s 判定窗）+ 麦克风第二轨 = **三轨导出**，正式包里验过（见 §5、[docs/recording-design.md](docs/recording-design.md)） |
-| 备份 | `backups/repo-v0.9.81.bundle`（今天三连发的源码），锚点见 `backups/RESTORE.md` |
+| 备份 | `backups/repo-v0.9.81.bundle`（43 MB，0.9.81 发版那一刻的源码），锚点见 `backups/RESTORE.md` |
 
 ## 1. 开工 30 秒
 
@@ -316,8 +316,10 @@ iPhone SE（**608×1080，直角屏**）和之前那台圆角 iPhone 的差异�
 2. `VERSION` / `BUILD_NUMBER` 递增（唯一来源）；
 3. `packaging/build_release.sh`（arm64）与 `ARCH=intel …`（Intel）→ 两个 DMG，均已公证 + staple；
 4. 生成 `.sha256`（`shasum -a 256 "$f" | awk '{print $1"  "$2}' > "${f%.dmg}.sha256"`）；
-5. `packaging/fetch_uxplay_source.sh` 出 GPL 对应源码 + `packaging/uxplay-build.patch`；
-6. `gh release create vX.Y.Z -R jianghui1974/Quileg-HID --notes-file <(从 CHANGELOG 抽这一行) <7 个资产>`；
+5. `packaging/fetch_uxplay_source.sh` 出 GPL 对应源码（包里已带 `uxplay-record.patch` 与
+   `uxplay-build.patch`，两个 patch 也作为单独资产）；
+6. `gh release create vX.Y.Z -R jianghui1974/Quileg-HID --notes-file <(从 CHANGELOG 抽这一行) <8 个资产>`
+   （两个 dmg + 两个 sha256 + 两个 patch + 源码 tar.gz + 源码 .txt）；
 7. **把上一版标 pre-release**（`gh release edit v<old> --prerelease`），否则用户继续下旧版；
 8. 站点：改 `README.md`（版本行 + 两个 DMG 的 SHA）、`docs/install.html`、`docs-src/VERSION.txt`，
    commit + push → Pages 自动构建（`gh api repos/.../pages/builds/latest -q .status` 轮询到 `built`）；
@@ -341,7 +343,7 @@ iPhone ──AirPlay──▶ UxPlay(7100) ──GStreamer──▶ JPEG ──�
 | 实验装置 | `experiments/`（PROTOCOL/prereg/目标集/FINDINGS，按编号）+ `tools/exp00*.py`（可复用脚本，见 §3.6） |
 | 粗测地图 | `control/scanmap.py`（纯逻辑）+ `Calibrator.coarse_scan()`；落在 `calib.wip.json` 的 `_wip.visibility` |
 | 录制本地复现 | `tools/rec_mux_probe.c`（`mp4mux` 行为探针：0 字节/moov/分片/丢帧，几秒出结果） |
-| 回滚锚点 | `backups/RESTORE.md`，最新是 `repo-v0.9.79-pre2.bundle`（43 MB，HEAD `e0ba150`，含全部历史与标签；源码的唯一异地副本）；发版后再打一份 `repo-v0.9.79.bundle` |
+| 回滚锚点 | `backups/RESTORE.md`，最新是 `repo-v0.9.81.bundle`（43 MB，含全部历史与标签；源码的唯一异地副本） |
 | Intel 的 uxplay | **自编** x86_64（`packaging/build_uxplay.sh`，framework GStreamer + 静态 libplist、**动态** libcrypto.3.dylib 随包）；arm64 也换成打过录制补丁的构建（不再用 Homebrew 的原版） |
 | 内置固件 | `app/firmware/*.bin` + `manifest.json`（sha256 在里面） |
 | 板子 | `HID Bridge C784`（`192.168.31.25`）、`HID Bridge 4F7C`（`.143`），固件 0.7.0 |
