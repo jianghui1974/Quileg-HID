@@ -463,6 +463,29 @@ iOS 的「最大速度」在限制长位移，所以曲线是**饱和型**，不
 - **顶角上行距离起点是占位值 400**，不是几何值：`tune_top_park()` 会按真值调到 3%–12%
   （实测 400 → 1093.5）。**别**把它换成 `0.94×屏高` 的估算当起点，那可能一上来就把指针顶到 y=0。
 
+### 4.7 打包版拿不到麦克风/摄像头权限：entitlements 少一条，系统连弹窗都不给（2026-10-31）
+
+hardened runtime 的 App 想用麦克风，**`packaging/entitlements.plist` 里必须有
+`com.apple.security.device.audio-input`**。少了它：`control/bin/miccap` 返回「权限被拒绝」，
+而「系统设置 → 隐私与安全性 → 麦克风」里**根本看不到这个 App** —— 因为 TCC 从来没收到过请求，
+所以也没有弹窗可以点。0.9.79 就是这么发出去的（带麦录制全废），0.9.80 补上重新出包。
+摄像头同理（`device.camera`，UVC 那条路早就加了，别删）。
+
+排查顺序：`codesign -d --entitlements - <App>/Contents/Resources/control/bin/miccap`
+看有没有 `audio-input` → 看系统设置列表里有没有这个 App → 都没有就是 entitlements 或签名问题，
+**不是** TCC 缓存问题，不用 `tccutil reset`。
+
+### 4.8 环形录制「边写边读」：请求窗口的尾部可能根本还没画面（2026-10-31）
+
+`mp4mux` 只把**已经有样本**的那部分写进文件；手机**画面静止**时没有新帧，
+文件里的媒体时间就落在墙钟后面。这时「录最近 10 秒」请求的范围可能超出已落盘画面，
+AVFoundation 报 `-11800 / -11880 / -16364`（Invalid sample cursor），
+**不是**像 ffmpeg 那样给个短一点的文件 —— 直接抛错，任务就失败了。
+
+`control/bin/clip` 现在按「已落盘画面」**逐级缩短窗口**（1 s 一档，最小 0.5 s）：
+能导 8 秒就给 8 秒，并如实回报实际时长；一点数据都没有时才 `retry: true` 让任务等一拍。
+所以**别再**把 `-11880` 当「数据坏了」。
+
 ### 4.4a `codesign` 报 "A timestamp was expected but was not found"
 
 不是代码问题：`--timestamp` 请求 Apple 时间戳服务器那一次失败了。**先原样重试一次**（实测 23:20 失败、
