@@ -40,9 +40,9 @@
     <p class="doc-kicker">文档 · 随安装包分发</p>
     <h1>给 AI 的操作手册</h1>
     <p class="doc-lead">工具语义、坐标校准、任务配方与安全边界。</p>
-<blockquote><p><strong>维护者</strong>：本项目 AI / 交接维护人 <strong>最后更新</strong>：2026-10-23 <strong>适用版本</strong>：Quileg HID 0.9.x / 板子固件 0.7.0（双板通用）；<code>control/mcp_server.py</code> 0.7.1；DSH 工具名 <code>mcp__iphone__*</code> <strong>当前设备</strong>：<strong>不固定</strong>——不同 iPhone / iPad、iOS 版本、指针大小、镜像分辨率都可能有各自档案； 以 <code>status()</code> 与 <code>control/calib.json</code> 的 <code>profiles</code> 为准，不要默认沿用上一台的经验。</p></blockquote>
+<blockquote><p><strong>维护者</strong>：Quileg HID 项目 <strong>最后更新</strong>：2026-10-23 <strong>适用版本</strong>：Quileg HID 0.9.x / 板子固件 0.7.0（双板通用）；<code>control/mcp_server.py</code> 0.7.1；DSH 工具名 <code>mcp__iphone__*</code> <strong>当前设备</strong>：<strong>不固定</strong>——不同 iPhone / iPad、iOS 版本、指针大小、镜像分辨率都可能有各自档案； 以 <code>status()</code> 与 <code>calibration_status()</code> 为准，不要默认沿用上一台的经验。</p></blockquote>
 <blockquote><p><strong>商标</strong>：文中出现的第三方 App / 系统名称仅用于说明操作路径与实测现象，商标归各自所有者，与本产品无隶属、合作或认证关系；示例操作请自行确认符合该 App 的服务条款。详见随包 <code>THIRD-PARTY-NOTICES.md</code> §5。</p></blockquote>
-<blockquote><p><strong>如果你是在 DMG 根目录读到这份文档</strong>：先把 DMG 里的 <code>*.md</code> 复制到项目 <code>docs/quileg-hid/</code>，再引用副本（见 DMG 的 <code>START-HERE.md</code>）；DMG 只读且会卸载。  <strong>先观察，再动手。</strong> 用户可能换手机/平板、换系统、换 App 版本；第一次接触先按 §0.1 建基线，把规律写进 <a href="troubleshooting.html">排障与兼容性</a>，下一次才不用重新踩坑。  本文是<strong>操作手册</strong>，不是设计文档。接入配置与安全边界见 <a href="mcp.html">接入 AI（MCP）</a>； 控制层 API 与踩坑见 <code>control/README.md</code>（源码仓库）；项目状态见 <code>HANDOVER.md</code>（源码仓库）。 <strong>改工具、改校准、改输入链路后，必须同步更新本文第 1、2、8 节。</strong></p></blockquote>
+<blockquote><p><strong>如果你是在 DMG 根目录读到这份文档</strong>：先把 DMG 里的 <code>*.md</code> 复制到项目 <code>docs/quileg-hid/</code>，再引用副本（见 DMG 的 <code>START-HERE.md</code>）；DMG 只读且会卸载。  <strong>先观察，再动手。</strong> 用户可能换手机/平板、换系统、换 App 版本；第一次接触先按 §0.1 建基线，把规律写进 <a href="troubleshooting.html">排障与兼容性</a>，下一次才不用重新踩坑。  本文是<strong>操作手册</strong>，不是设计文档。接入配置与安全边界见 <a href="mcp.html">接入 AI（MCP）</a>； 文中提到的 <code>PITFALLS.md</code> 是随安装包分发的踩坑库，线上版见 <a href="troubleshooting.html">排障与兼容性</a>。 <strong>改工具、改校准、改输入链路后，必须同步更新本文第 1、2、8 节。</strong></p></blockquote>
 <hr>
 <h2>0. 30 秒判断能不能干活</h2>
 <p>先调用：</p>
@@ -241,7 +241,7 @@ click_text("AC")     -&gt; 1 次命中，变化 3,535 px</code></pre>
 <ol><li>新增/修改 MCP 工具：更新第 1 节表格和第 8 节。</li><li>校准表/手机/分辨率变化：更新第 0、2 节，并重跑一次第 4.3、4.4 的验收。</li><li>输入链路变化：更新第 4.2、5 节。</li><li>任何安全边界变化：更新第 6 节，并同步 <a href="mcp.html">接入 AI（MCP）</a> §5。</li><li>本文与代码冲突时，以 <code>control/mcp_server.py</code> 的实际工具签名为准，并立即回来改文档。</li></ol>
 <hr>
 <h2>9. 相关文档</h2>
-<ul><li><a href="mcp.html">接入 AI（MCP）</a>：MCP 接入、工具一览、安全边界</li><li><code>control/README.md</code>（源码仓库）：控制层 API、校准细节、输入链路</li><li><code>app/README.md</code>（源码仓库）：GUI 操作</li><li><code>HANDOVER.md</code>（源码仓库）：项目当前状态、下一步</li><li><a href="troubleshooting.html">排障与兼容性</a>：踩坑与经验库（按层分类，附 App 兼容矩阵与设备基线）</li><li><a href="features.html">app/APP_CAPABILITIES.md</a>：App 功能地图、设置项、排障路径</li><li><a href="lifecycle.html">app/LIFECYCLE.md</a>：窗口隐藏 / 退出 / 开机自启动（解释 <code>status</code> 为什么可能还活着）</li><li><code>新板安装SOP.md</code>（源码仓库）：换板子/新板时的整包刷写与配网</li></ul>
+<ul><li><a href="mcp.html">接入 AI（MCP）</a>：MCP 接入、工具一览、安全边界</li><li><a href="troubleshooting.html">排障与兼容性</a>：踩坑与经验库（按层分类，附 App 兼容矩阵与设备基线）</li><li><a href="features.html">app/APP_CAPABILITIES.md</a>：App 功能地图、设置项、排障路径</li><li><a href="lifecycle.html">app/LIFECYCLE.md</a>：窗口隐藏 / 退出 / 开机自启动（解释 <code>status</code> 为什么可能还活着）</li></ul>
     <p class="doc-source">本页内容与安装包内文档同源，版本见 VERSION.txt。未在页面上展示的细节，可在
     <a href="https://github.com/jianghui1974/Quileg-HID/releases">Releases</a> 页下载的 DMG 中找到完整原文。</p>
   </article>

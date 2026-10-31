@@ -40,7 +40,7 @@
     <p class="doc-kicker">文档 · 随安装包分发</p>
     <h1>运行方式：常驻与退出</h1>
     <p class="doc-lead">关窗为什么不退出、自启动怎么工作、什么算「忙」。</p>
-<blockquote><p>适用：Quileg HID 0.5.0+。相关：<code>app/README.md</code>（界面，源码仓库）、MCP 接入说明（MCP-SETUP.md）</p></blockquote>
+<blockquote><p>适用：Quileg HID 0.5.0+。相关：<a href="mcp.html">接入 AI（MCP）</a></p></blockquote>
 <p>App 同时是<strong>设备控制台</strong>和<strong>AI 的 MCP 接口</strong>，所以窗口只是它的一部分。这里定义 「窗口 / 进程 / 服务」的关系，以及关窗、退出、登录启动的行为。</p>
 <h2>1. 三层模型</h2>
 <div class="table-wrap"><table class="doc-table"><thead><tr><th>层</th><th>内容</th><th>关窗</th><th>退出</th></tr></thead><tbody><tr><td>服务</td><td>hidagent <code>:8890</code>、UxPlay、板子 TCP <code>7300</code>、MCP</td><td>不动</td><td>停</td></tr><tr><td>窗口</td><td>镜像、设备、日志</td><td>隐藏</td><td>关</td></tr><tr><td>入口</td><td>GUI、<code>HIDBridge --mcp</code>（宿主拉起）</td><td>不受影响</td><td><code>--mcp</code> 独立进程</td></tr></tbody></table></div>
