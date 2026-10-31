@@ -47,7 +47,8 @@ jobs:
       - name: 敏感串
         run: |
           set -uo pipefail
-          hits="$(git ls-files -z | xargs -0 grep -nIE \
+          # .github/ 是 CI 自己的配置，扫它会把规则本身当成命中
+          hits="$(git ls-files -z | grep -zv '^\.github/' | xargs -0 grep -nIE \
             '[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}|(192\.168|10)\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}|/Users/[A-Za-z0-9._-]+/|HID Bridge [0-9A-F]{4}|/dev/cu\.usbmodem|BSSID|硬件检测与交接文档|gh[pousr]_[A-Za-z0-9]{16,}' \
             --include='*.html' --include='*.md' --include='*.css' --include='*.js' \
             --include='*.json' --include='*.txt' --include='*.svg' --include='*.yml' || true)"
