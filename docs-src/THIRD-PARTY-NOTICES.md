@@ -93,9 +93,13 @@ SOFTWARE.
 ### 2.2 分发形式
 
 - Quileg HID 以**独立可执行文件**形式随 App 分发：`Quileg HID.app/Contents/Frameworks/airplay/uxplay`；
-- arm64 版为未经修改的上游构建；**Intel 版**套用了一个**只有两行的构建补丁**
+- **0.9.79 起两个架构都套用了 [`packaging/uxplay-record.patch`](packaging/uxplay-record.patch)**
+  （`-mp4ctl` 命令文件驱动的录制：环形录制、断线 hold、AVCC→Annex-B 转换、分片 mp4）。
+  该补丁**只在传入 `-mp4ctl <file>` 时生效**，命令行不带这个参数时 UxPlay 的行为与上游一致
+  （Quileg HID 保留上游的 `-mp4` 语义，不改变其用法）。对应源码 = 上游源码 + 该补丁（见 §2.3）；
+- **Intel 版**另加一个**只有两行的构建补丁**
   [`packaging/uxplay-build.patch`](packaging/uxplay-build.patch)：把 `PKG_CONFIG_PATH` 的赋值从「覆盖」改成「环境优先」，
-  以便链接官方 universal GStreamer。该补丁不改变 UxPlay 的任何功能逻辑；对应源码 = 上游源码 + 该补丁（见 §2.3）；
+  以便链接官方 universal GStreamer。该补丁不改变 UxPlay 的任何功能逻辑；
 - Quileg HID 与 UxPlay 通过**进程边界**（命令行参数 + 标准输出管道）交互，两者是独立程序；GPL-3.0 的覆盖范围仅及 UxPlay 本身及其衍生作品，**不延伸到 Quileg HID 的自有代码**；
 - 随包同时提供 GPL-3.0 全文：[`licenses/GPL-3.0.txt`](licenses/GPL-3.0.txt)。
 
@@ -103,8 +107,8 @@ SOFTWARE.
 
 按 GPL-3.0 的要求，我们向收到本产品的任何人提供 UxPlay 的**对应源码**：
 
-1. **同一下载页提供源码包**：`uxplay-master-source.tar.gz`（与所分发二进制同版本的上游源码）
-   与 `uxplay-build.patch`（Intel 构建补丁）；
+1. **同一下载页提供源码包**：`uxplay-master-source.tar.gz`（与所分发二进制同版本的上游源码，
+   包内已附带两个补丁与说明）以及单独的 `uxplay-record.patch`、`uxplay-build.patch`；
 2. 或访问上游仓库对应版本：<https://github.com/FDH2/UxPlay>；
 3. 若以上方式不可用，可书面请求 `quileg@airdiode.com`，我们在 **3 年内**免费提供完整源码（可选用物理介质，仅收取成本费）。
 
