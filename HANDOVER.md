@@ -8,24 +8,25 @@
 
 ---
 
-## 0. 一句话状态（2026-10-30 20:40）
+## 0. 一句话状态（2026-10-31 12:50）
 
 | 项 | 值 |
 |---|---|
-| App | **0.9.76（Build 131）**，`/Applications/Quileg HID.app`，线上 **v0.9.76 已是 Latest**（双架构 DMG 均公证 + staple；0.9.75/0.9.74/0.9.73 已标 pre-release） |
+| App | **0.9.78（Build 133）**，`/Applications/Quileg HID.app`，线上 **v0.9.78 已是 Latest**（双架构 DMG 均公证 + staple；0.9.77 及更早已标 pre-release） |
 | 固件 | **0.7.0**，`s3_16m_universal` 一份镜像带双板（XIAO + N16R8） |
-| 探针 | **Pointer Tester 0.2.5 (13)** —— 粗测 ⌘I / HUD ⌘K / 二维码 ⌘B；**HUD 默认关**（开着会造 TL 盲区） |
+| 探针 | **Pointer Tester 0.2.5 (13)**，TestFlight **Beta 审核已通过（2026-10-31）** → 外部测试者点公开链接即可装；网页版 **probe-web v6.3**（⌘I/⌘K/⌘B、读数默认关，导航走 network-first）；两边 **HUD 默认关** |
 | 被控设备 | **iPhone SE 608×1080（直角屏）** 与 iPhone 500×1080（圆角）**两台并存**，`profiles` 里各一张表，按画面尺寸自动切换 |
 | 校准表 | `airplay:608x1080`（SE，`stops=minimal`，10:56 校准）+ `airplay:500x1080`（圆角，`stops=full`，12:45 校准） |
 | 校准质量 | **SE 1.0 px 中位**（120 点持出，最大 4.5）；**圆角 6.25 px 中位 / p90 39**（30 点持出）—— 圆角的瓶颈是曲线饱和，见 §3.4 |
-| 源码 | `VERSION 0.9.76 / BUILD 131`，**工作区干净**（HEAD 以 `git log -1` 为准）。**git 推不上去**，远端只同步 `README/CHANGELOG/HANDOVER/PITFALLS` + `docs*/`（走 `gh api`），代码本身没推 |
-| 备份 | `backups/repo-v0.9.76.bundle`（唯一异地副本），锚点见 `backups/RESTORE.md` |
+| 源码 | `VERSION 0.9.78 / BUILD 133`，**工作区干净**（HEAD 以 `git log -1` 为准）。**git 推不上去**，远端只同步 `README/CHANGELOG/HANDOVER/PITFALLS` + `docs*/`（走 `gh api`），代码本身没推 |
+| 录制 | **0.9.79 目标，功能已全部真机验证**：环形录制 + 窗口导出 + 节目音（判定窗）+ 麦克风第二轨 = **三轨导出**（见 §5、[docs/recording-design.md](docs/recording-design.md)）；剩打包/公证/Intel |
+| 备份 | `backups/repo-v0.9.79-pre2.bundle`（今天录制工作收尾、三轨验完的源码），锚点见 `backups/RESTORE.md` |
 
 ## 1. 开工 30 秒
 
 ```bash
 curl -s http://127.0.0.1:8890/api/status | head -c 200      # device/screen 都 true 才算能干活
-.venv/bin/python -m unittest discover -s app/tests -q        # 729 条，应全绿（1 条真机 OCR 帧回归会 skip）
+.venv/bin/python -m unittest discover -s app/tests -q        # 797 条，应全绿（1 条真机 OCR 帧回归会 skip）
 ```
 
 > 2026-10-29 之前这里挂着一条既有失败（`test_frame_freshness.ForceSystemZoneTest`）：它读本机的
@@ -52,11 +53,11 @@ calibration_status()  → resume 为空 = 没有被打断的校准；calibrating
 
 | 版本 | 一句话 |
 |---|---|
-| 0.9.72 | 粗测切模式修好：固件只认 `cmd+i`（不是 `gui+i`），409 与断链都会重试 |
-| 0.9.73 | 档位表自适应续延 + 贴边档不剪：直角屏 iPhone SE 首次通过 |
 | 0.9.74 | **校准第一档结构自检**：SE 的 TL/TR y 首档偏 4 倍、顶边整条打高 50 px；载入时也修老档案 |
 | 0.9.75 | **直角屏精简档位**（x3/y4）：校准快 3 倍、精度不变；判据用实测停车点自动分直角/圆角 |
 | 0.9.76 | **aim 纠偏改用探针真值**（原来帧差找不到就静默放弃）；校准加覆盖边界定点检查；状态栏右下角显示版本号 |
+| 0.9.77 | **校准前自动收起探针读数**（OCR 确认可见才发 ⌘K，结束还原）；网页版探针补齐 ⌘I/⌘K/⌘B、读数默认关 |
+| 0.9.78 | **文档版**：随包《第一天：从零到能用》上手手册；AI 手册补「先建立信任 / 键盘优先 / 等页面稳定」；清扫过期口径 |
 
 ## 3. 校准：现在这套口径
 
@@ -199,7 +200,30 @@ iPhone SE（**608×1080，直角屏**）和之前那台圆角 iPhone 的差异�
 | `tools/exp002_min_table.py` | 精简档位测绘 + 配对对照（`--targets/--out` 可换机型） |
 | `tools/exp005_adaptive.py` | 密曲线测量 + 自适应摆点（含离线评分） |
 
-## 4. 动手前必须知道的六条## 4. 动手前必须知道的六条
+### 3.7 读数来源：验证通过 ≠ 读数纯（0.9.79，2026-10-31）
+
+`validate()` / `band_check()` 在探针读不到时**也会回落帧差** —— 所以「表验证过了」只说明
+**能用**，不说明**是按真值量的**。没有探针时校准照样跑完、照样过验证，落点却差一档；
+以前这件事完全不可见（RISKS A1 那条「静默回落」）。
+
+现在同一件事有三个出口：
+
+| 出口 | 字段 | 谁看 |
+|---|---|---|
+| `status.measurement` | `source`：`probe`／`frame`／`null`，`probe_age_ms`，`note`（可直接念给用户） | AI，每次操作 |
+| `calibration_status.measure` | `source`：`probe`／`mixed`／`frame`／`model`／`unknown` + 计数 | AI 判断这张表的质量 |
+| 读数条「定位」 | 「定位 表（帧差）」+ 警告色 | 用户 |
+
+写表时 `calib.json` 每个档案带 `measure`；续校把 wip 里前面几个角的计数接上（否则一张
+半帧差半探针的表会自称全真值）。**老表没有这个字段 = 不知道**，界面按纯表显示，不吓人。
+
+判据代码：`Calibrator._measure_summary()`、`Device.measurement_state()`、
+`app/core/positioning.py`；单测 `app/tests/test_measure_source.py`（20 条）+
+`test_positioning_hud.py`（4 条，真 Tk 渲染接线）。真机实测（2026-10-31 10:1x）：
+探针在前台 → `source=probe`；把 `probe.read_state` 打桩成 None → `source=frame` +
+`note`，`aim` 回执也报 `source=frame`。
+
+## 4. 动手前必须知道的六条
 
 1. **改了 `control/*.py`（或升级 App）必须重启 MCP**：DSH 用的是源码目录的 `mcp_server.py`，
    宿主拉起来后一直跑旧代码；App 升级也不会让 MCP 自动更新。
@@ -222,23 +246,60 @@ iPhone SE（**608×1080，直角屏**）和之前那台圆角 iPhone 的差异�
 
 ## 5. 下一步（按优先级）
 
-2026-10-30 一天发了三版（0.9.74 / 0.9.75 / 0.9.76），三件事都收尾了：
-网格方案否掉（§3.3）、直角屏精简档位上线（§3.4）、`aim` 纠偏修好 + 校准加边缘检查 +
-版本号上状态栏（PITFALLS §2.40）。
+2026-10-30 一天发了 **0.9.74 → 0.9.78 五版**：精简档位、`aim` 纠偏、HUD 自动收起、
+网页版探针补齐键位、随包上手手册，外加一轮过期口径清扫。
 
-**剩下的按「值不值得做」排：**
+**已完成（不再挂待办）**：探针 **0.2.5 (13) 的 Beta 审核已通过（2026-10-31）** —— 外部测试者
+点公开链接就能装，探针分发这条风险（RISKS A1）闭环。下一个动作只是 90 天后按例行重新上传。
+
+**同一天补上的**：**降级明示**（RISKS A1 的最后一条待办）—— `status.measurement` +
+`calibration_status.measure` + 读数条「定位 表（帧差）」，见 §3.7。代码已进工作区，
+**待随 0.9.79 发版**（`VERSION` 仍是 0.9.78，发版时才动）。
+
+**录制功能（目标 0.9.79）** —— 设计与实测见 [docs/recording-design.md](docs/recording-design.md)
+
+一句话：AirPlay 镜像会话**只有一个 IDR**（在会话起点，实测 1599 个 NAL 里仅 1 个），
+所以「随时开录」在协议层不成立；改成**镜像一连上就环形录制**，MCP 的 `record_start`
+= 导出某个时间窗口（可预约将来，也可补录环形范围内刚过去的时间）。
+
+| 部分 | 状态 |
+|---|---|
+| 环形录制（`ring-*.mp4`）+ 窗口导出 | ✅ 真机：5.00 s / 3.00 s 精确，导出首帧与环形同一时点**逐像素相同** |
+| `record_start/status/stop` + `/api/record/*` + 单测 | ✅ 797 条全绿 |
+| 读数条红点 `● REC mm:ss` | ✅ |
+| **节目音**（3 s 判定窗 + 静态音轨） | ✅ 静音会话出纯视频（`audio=0`）、有声会话出节目音（−14.6 dB） |
+| 麦克风第二音轨（`video_mic` / `audio_mic`） | ✅ 导出**三轨**（视频 + 节目音立体声 + 麦克风单声道） |
+| 打包 / 公证 / Intel / GPL 源码 | ⬜ **只剩这件事**；`packaging/uxplay-record.patch` 已定稿 |
+
+工程上的三条（都已实测，别重犯，细节见 PITFALLS §2.46/§2.47）：
+1. **音频 pad 没数据 = `mp4mux` 0 字节**，而且不能事后 `request_pad` → 形状必须开流前定死
+   （现在的做法：先缓存画面，3 s 内等到第一个节目音包就带音轨，等不到就纯视频）；
+2. **分片模式必须 `dash-or-mss`**：`first-moov-then-finalise` 的文件 AVFoundation 只能
+   导开头几秒（`-11800`），ffprobe 却完全正常 —— 属于「安静的坏」；
+3. 建管道就 **PLAYING**，别再玩「第一帧到了才 PLAYING」（那才会不写 moov）。
+
+`tools/rec_mux_probe.c` 是本地复现装置（不需要手机，几秒出结果）：改任何录制参数前先在那里跑。
+
+**下次开工第一件事**：0.9.79 发版三件事 —— ①`VERSION`/`BUILD_NUMBER` 递增 +
+`CHANGELOG` 一行；②`packaging/build_release.sh` 双架构 + 公证 + 出 GPL 对应源码
+（录制补丁进了 uxplay，**必须一起发**）；③真机冒烟：装新包 → 环形文件是三轨、导出三轨。
+
+**剩下的：**
 
 1. **圆角机的开环精度（6 px 中位 / p90 39）—— 不要再投入**。
    一天里试了三种互不相同的思路（2-D 网格、精简档位、加密+按曲率摆点），真机全部没赢；
-   圆角机的残差是曲线饱和 + 偶发跳变，**不是表的形状问题**。
-   真要动，动闭环（`aim` 已经修好了），别动表。
+   残差是曲线饱和 + 偶发跳变，**不是表的形状问题**。真要动，动闭环（`aim` 已修好），别动表。
 2. **盲区分支没验过**：`run(scan=True)` 的 `skipped(blind)` 还没在真有盲区的机器上跑过
-   —— 现在两台都不盲。要验就人为造盲区（把探针 HUD 打开）。
-3. **UVC 在 macOS 13 上仍不可用**；`docs/*.html` 的生成脚本没找到（站点 HTML 是手改的）。
-4. 小事：`tools/exp001_verify.py` 的「修前/修后」对比已按机型 + 目标集门控，但圆角机
-   还没有同源基线 —— 要的话跑一次 `--targets experiments/exp-002/targets-round.json` 存一份。
+   （现在两台都不盲）。要验就人为造盲区（把探针 HUD 打开）。
+3. **Intel 真机冒烟**：0.9.78 只在 Rosetta 下验过架构 / 插件路径 / uxplay 管线；
+   2026-10-30 决定**等客户反馈再说**，不再主动找机器。
+4. **0.9.79 的收尾小事**：`ONBOARDING.md` 的口径行已改成「以 `VERSION.txt` 为准」
+   （0.9.78 包里还是 0.9.77 的字样，随下个版本自然更新）。
+5. `tools/exp001_verify.py` 的「修前/修后」对比已按机型 + 目标集门控，但圆角机还没有同源基线
+   —— 要的话跑一次 `--targets experiments/exp-002/targets-round.json` 存一份。
 
-**明确不要做**：换测绘器、调档位密度、调档位摆放（今天已被实验三次否掉，见 §3.3/§3.4 的引用）。
+**明确不要做**：换测绘器、调档位密度、调档位摆放（已被实验三次否掉，见 §3.3/§3.4）；
+**也不要提议支持 8 MB 板** —— 16 MB 是产品决定（后续摄像头方案要大分区，见 §8）。
 
 ## 6. 发版流程（一次完整发版）
 
@@ -270,17 +331,30 @@ iPhone ──AirPlay──▶ UxPlay(7100) ──GStreamer──▶ JPEG ──�
 | 源码 | `app/`（GUI）`control/`（控制层 + MCP）`firmware/`（固件）`packaging/`（出包）`pointer-tester/`（探针） |
 | 实验装置 | `experiments/`（PROTOCOL/prereg/目标集/FINDINGS，按编号）+ `tools/exp00*.py`（可复用脚本，见 §3.6） |
 | 粗测地图 | `control/scanmap.py`（纯逻辑）+ `Calibrator.coarse_scan()`；落在 `calib.wip.json` 的 `_wip.visibility` |
-| 回滚锚点 | `backups/RESTORE.md`，最新是 `repo-v0.9.76.bundle`（43 MB，含全部历史与标签；源码的唯一异地副本） |
+| 录制本地复现 | `tools/rec_mux_probe.c`（`mp4mux` 行为探针：0 字节/moov/分片/丢帧，几秒出结果） |
+| 回滚锚点 | `backups/RESTORE.md`，最新是 `repo-v0.9.79-pre2.bundle`（43 MB，HEAD `e0ba150`，含全部历史与标签；源码的唯一异地副本）；发版后再打一份 `repo-v0.9.79.bundle` |
 | 内置固件 | `app/firmware/*.bin` + `manifest.json`（sha256 在里面） |
 | 板子 | `HID Bridge C784`（`192.168.31.25`）、`HID Bridge 4F7C`（`.143`），固件 0.7.0 |
 
 ## 8. 边界（不要对用户承诺）
 
-- **iPhone 没有 ⌘Tab**（iOS 无应用切换；`⌘H` + Spotlight 可用）；iPad 有。
-- **BLE HID 触发不了 iOS 快捷指令**；右键是「应用相关」的，部分第三方列表无反应。
-- **只支持 16 MB 板**：8/4 MB 板刷写前会被拒（不校验 flash 大小的老版本才危险）。
-- **非 Apple 平台没有 AirPlay**，只能走 UVC 采集卡。
+- **iPhone 没有 ⌘Tab**（iOS 无应用切换快捷键；`⌘H` + Spotlight 可用）。（0.9.77 / iOS 26 实测仍成立）
+  iPadOS 系统有 `⌘Tab`，但**我们的键位白名单没放行 `gui+tab`**，所以 AI 两台都走 `⌘H` + Spotlight；
+  要放行是「改 keymap + 一次真机验证」，别顺手开。
+- **iOS 快捷指令的键盘快捷键可以用**（2026-10-30 实测：`⌘1/⌘2/⌘3` 打开了用户设的三个快捷指令；
+  归档里「BLE HID 触发不了」的旧结论已作废）；但**映射是用户自己设的**，宿主不知道，用前确认一次。
+- **iOS/iPadOS 截屏 = `⇧⌘3`（与 Mac 一致）**，2026-10-31 真机验过（出现系统截图预览），
+  0.9.79 起白名单直接放行（`key(action="screenshot")`）；`⇧⌘4` 仍是实验，别开。
+  截图是相册里的真文件，所以**能接用户自建的快捷指令做端侧 OCR**（这条路成立，说明见
+  AI_GUIDE §4.14；映射与结果去向都由用户定，AI 只确认、预设和代配都不要做）。
+- 右键是「应用相关」的，部分第三方列表无反应。
+- **只支持 16 MB 板，这是产品决定，不是待办**：后续要上板载摄像头，分区需要 16 MB 的余量，
+  所以硬件统一锁死 16 MB、避免多版本。8/4 MB 板刷写前会被拒（不校验 flash 大小的老版本才危险）。
+  **不要提议「顺手支持 8 MB 板」**——那会让我们维护两套分区表和两套固件。
+- **非 Apple 平台没有 AirPlay**，只能走 UVC 采集卡。（0.9.77 仍成立）
 - **iPad 最底部约 13% 是钳位区**；底部目标多花约 1 s（等程序坞收起）。
+- **滚轮方向看界面**：同一台设备上，原生列表与网页/内嵌视图可能相反，用户可在设置里翻转；
+  别据此判断固件坏了。
 - 校准**不是必选项**：没有表也能点（`positioning=visual`，10–40 px、每动作多 2–6 s）。
 
 ## 9. 文档地图
@@ -288,11 +362,13 @@ iPhone ──AirPlay──▶ UxPlay(7100) ──GStreamer──▶ JPEG ──�
 | 什么时候读 | 文件 |
 |---|---|
 | 接手 / 现在什么状态 | **本文** |
+| 第一次装 / 教用户跑通 | [ONBOARDING.md](ONBOARDING.md)（安装、四个开关、两根探针、校准口径） |
 | 要操作 iPhone | [AI_GUIDE.md](AI_GUIDE.md)（工具语义、任务配方、排障、安全边界） |
 | 踩坑 / 不要重蹈 | [PITFALLS.md](PITFALLS.md)（§2 输入、§3 坐标、§4 校准与发布、§6 兼容矩阵、§9 便宜板） |
 | 哪版改了什么 | [CHANGELOG.md](CHANGELOG.md) |
 | 客户交付与验收 | [DELIVERY.md](DELIVERY.md)、[新板安装SOP.md](新板安装SOP.md) |
 | 风险清单 | [RISKS.md](RISKS.md) |
+| 录制功能（现状 / 协议坑 / 下一步） | [docs/recording-design.md](docs/recording-design.md) |
 | 维护 / 归档规矩 | [docs/MAINTENANCE.md](docs/MAINTENANCE.md) |
 | 当天做过什么实验、为什么否掉 | [experiments/](experiments/)（每条都有 FINDINGS，附实测数字） |
 | 历史（不要主动读） | [docs/archive/](docs/archive/)（有索引 `README.md`） |
