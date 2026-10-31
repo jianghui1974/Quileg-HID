@@ -12,15 +12,15 @@
 
 | 项 | 值 |
 |---|---|
-| App | **0.9.78（Build 133）**，`/Applications/Quileg HID.app`，线上 **v0.9.78 已是 Latest**（双架构 DMG 均公证 + staple；0.9.77 及更早已标 pre-release） |
+| App | **0.9.81（Build 136）**，`/Applications/Quileg HID.app`，线上 **v0.9.81 = Latest**（双架构 DMG 均公证 + staple；0.9.78–0.9.80 已标 pre-release） |
 | 固件 | **0.7.0**，`s3_16m_universal` 一份镜像带双板（XIAO + N16R8） |
 | 探针 | **Pointer Tester 0.2.5 (13)**，TestFlight **Beta 审核已通过（2026-10-31）** → 外部测试者点公开链接即可装；网页版 **probe-web v6.3**（⌘I/⌘K/⌘B、读数默认关，导航走 network-first）；两边 **HUD 默认关** |
 | 被控设备 | **iPhone SE 608×1080（直角屏）** 与 iPhone 500×1080（圆角）**两台并存**，`profiles` 里各一张表，按画面尺寸自动切换 |
 | 校准表 | `airplay:608x1080`（SE，`stops=minimal`，10:56 校准）+ `airplay:500x1080`（圆角，`stops=full`，12:45 校准） |
 | 校准质量 | **SE 1.0 px 中位**（120 点持出，最大 4.5）；**圆角 6.25 px 中位 / p90 39**（30 点持出）—— 圆角的瓶颈是曲线饱和，见 §3.4 |
 | 源码 | `VERSION 0.9.78 / BUILD 133`，**工作区干净**（HEAD 以 `git log -1` 为准）。**git 推不上去**，远端只同步 `README/CHANGELOG/HANDOVER/PITFALLS` + `docs*/`（走 `gh api`），代码本身没推 |
-| 录制 | **0.9.79 目标，功能已全部真机验证**：环形录制 + 窗口导出 + 节目音（判定窗）+ 麦克风第二轨 = **三轨导出**（见 §5、[docs/recording-design.md](docs/recording-design.md)）；剩打包/公证/Intel |
-| 备份 | `backups/repo-v0.9.79-pre2.bundle`（今天录制工作收尾、三轨验完的源码），锚点见 `backups/RESTORE.md` |
+| 录制 | **0.9.79 起已发布**：环形录制 + 按窗口导出 + 节目音（3 s 判定窗）+ 麦克风第二轨 = **三轨导出**，正式包里验过（见 §5、[docs/recording-design.md](docs/recording-design.md)） |
+| 备份 | `backups/repo-v0.9.81.bundle`（今天三连发的源码），锚点见 `backups/RESTORE.md` |
 
 ## 1. 开工 30 秒
 
@@ -264,12 +264,12 @@ iPhone SE（**608×1080，直角屏**）和之前那台圆角 iPhone 的差异�
 
 | 部分 | 状态 |
 |---|---|
-| 环形录制（`ring-*.mp4`）+ 窗口导出 | ✅ 真机：5.00 s / 3.00 s 精确，导出首帧与环形同一时点**逐像素相同** |
-| `record_start/status/stop` + `/api/record/*` + 单测 | ✅ 797 条全绿 |
+| 环形录制（`ring-*.mp4`）+ 窗口导出 | ✅ 真机 + **正式包**：5.00 s 精确，导出首帧与环形同一时点**逐像素相同** |
+| `record_start/status/stop` + `/api/record/*` + 单测 | ✅ 800 条全绿 |
 | 读数条红点 `● REC mm:ss` | ✅ |
 | **节目音**（3 s 判定窗 + 静态音轨） | ✅ 静音会话出纯视频（`audio=0`）、有声会话出节目音（−14.6 dB） |
-| 麦克风第二音轨（`video_mic` / `audio_mic`） | ✅ 导出**三轨**（视频 + 节目音立体声 + 麦克风单声道） |
-| 打包 / 公证 / Intel / GPL 源码 | ⬜ **只剩这件事**；`packaging/uxplay-record.patch` 已定稿 |
+| 麦克风第二音轨（`video_mic` / `audio_mic`） | ✅ 正式包三轨（视频 + 节目音立体声 −14.3 dB + 麦克风单声道 −43.7 dB） |
+| 打包 / 公证 / Intel / GPL 源码 | ✅ 0.9.79 / 0.9.80 / 0.9.81 三连发；`uxplay-record.patch` 已随包 |
 
 工程上的三条（都已实测，别重犯，细节见 PITFALLS §2.46/§2.47）：
 1. **音频 pad 没数据 = `mp4mux` 0 字节**，而且不能事后 `request_pad` → 形状必须开流前定死
@@ -280,9 +280,18 @@ iPhone SE（**608×1080，直角屏**）和之前那台圆角 iPhone 的差异�
 
 `tools/rec_mux_probe.c` 是本地复现装置（不需要手机，几秒出结果）：改任何录制参数前先在那里跑。
 
-**下次开工第一件事**：0.9.79 发版三件事 —— ①`VERSION`/`BUILD_NUMBER` 递增 +
-`CHANGELOG` 一行；②`packaging/build_release.sh` 双架构 + 公证 + 出 GPL 对应源码
-（录制补丁进了 uxplay，**必须一起发**）；③真机冒烟：装新包 → 环形文件是三轨、导出三轨。
+**当天三连发的教训（都已修进代码，别再重犯）**：
+
+1. **0.9.80 紧急**：hardened runtime 少了 `com.apple.security.device.audio-input`，
+   打包版**连麦克风授权弹窗都不出现**（TCC 列表里根本没有这个 App），带麦录制必然失败。
+   PITFALLS §4.7；
+2. **0.9.81**：环形文件「边写边读」，静态屏时请求窗口尾部可能还没样本，AVFoundation 报
+   `-11880/-11800/-16364` 而**不会**给个短文件 → `clip` 改为按已落盘画面**自动缩短窗口**；
+3. `packaging/build_uxplay.sh` 会把 `uxplay-build.patch` 套两遍（`UXPLAY_PATCH` + `uxplay-*.patch`
+   循环），第二遍被认成「已套用」而**回滚**，构建补丁等于没打 → 已跳过重复文件。
+
+**下次开工第一件事**：0.9.82 的两件事 —— ①带盲区的机器上验 `run(scan=True)` 的
+`skipped(blind)`；②Intel 真机冒烟（等客户反馈，别主动找机器）。发版流程照 §6。
 
 **剩下的：**
 
@@ -333,6 +342,7 @@ iPhone ──AirPlay──▶ UxPlay(7100) ──GStreamer──▶ JPEG ──�
 | 粗测地图 | `control/scanmap.py`（纯逻辑）+ `Calibrator.coarse_scan()`；落在 `calib.wip.json` 的 `_wip.visibility` |
 | 录制本地复现 | `tools/rec_mux_probe.c`（`mp4mux` 行为探针：0 字节/moov/分片/丢帧，几秒出结果） |
 | 回滚锚点 | `backups/RESTORE.md`，最新是 `repo-v0.9.79-pre2.bundle`（43 MB，HEAD `e0ba150`，含全部历史与标签；源码的唯一异地副本）；发版后再打一份 `repo-v0.9.79.bundle` |
+| Intel 的 uxplay | **自编** x86_64（`packaging/build_uxplay.sh`，framework GStreamer + 静态 libplist、**动态** libcrypto.3.dylib 随包）；arm64 也换成打过录制补丁的构建（不再用 Homebrew 的原版） |
 | 内置固件 | `app/firmware/*.bin` + `manifest.json`（sha256 在里面） |
 | 板子 | `HID Bridge C784`（`192.168.31.25`）、`HID Bridge 4F7C`（`.143`），固件 0.7.0 |
 
