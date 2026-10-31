@@ -1,0 +1,59 @@
+name: public-surface
+
+# 站点仓库 = 公开面：只许「官网 + 文档 + 探针 + 发布资产」。
+# 由来（PITFALLS §2.51）：2026-10-29 发版第 8 步把本地硬件交接文档当成站点 README
+# 整个传了上来（板子 MAC / 内网 IP / 本机路径），之后 38 个提交继续在公开面改内部文档。
+#
+# 这里挡**名字**；内容扫描（MAC / 内网 IP / 本机路径 / 板子名）在本地
+# `tools/check_public_surface.py --remote`，推送前后各跑一次。两边规则要同步。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  surface:
+    name: 公开面白名单
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 文件白名单
+        run: |
+          set -uo pipefail
+          files="$(git ls-files)"
+          bad=0
+          while IFS= read -r f; do
+            [[ -n "$f" ]] || continue
+            if [[ ! "$f" =~ ^(index\.html|styles\.css|LICENSE|README\.md|(assets|docs|en|probe|\.github)/) ]]; then
+              echo "::error file=$f::$f 不在公开白名单里（HANDOVER §4.5 / PITFALLS §2.51）"
+              bad=1
+            fi
+          done <<< "$files"
+          for need in index.html README.md docs/index.html; do
+            if ! grep -qx -- "$need" <<< "$files"; then
+              echo "::error::$need 缺失（站点被删坏了）"
+              bad=1
+            fi
+          done
+          [[ $bad -eq 0 ]] && echo "✅ 文件名干净（$(grep -c . <<< "$files") 个）"
+          exit $bad
+
+      - name: 敏感串
+        run: |
+          set -uo pipefail
+          hits="$(git ls-files -z | xargs -0 grep -nIE \
+            '[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}|(192\.168|10)\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}|/Users/[A-Za-z0-9._-]+/|HID Bridge [0-9A-F]{4}|/dev/cu\.usbmodem|BSSID|硬件检测与交接文档|gh[pousr]_[A-Za-z0-9]{16,}' \
+            --include='*.html' --include='*.md' --include='*.css' --include='*.js' \
+            --include='*.json' --include='*.txt' --include='*.svg' --include='*.yml' || true)"
+          if [[ -n "$hits" ]]; then
+            printf '%s\n' "$hits"
+            echo "::error::公开面含内部信息（MAC / 内网 IP / 本机路径 / 板子名…）"
+            exit 1
+          fi
+          echo "✅ 内容干净"
