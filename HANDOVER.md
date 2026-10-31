@@ -22,7 +22,7 @@
 | 校准质量 | **SE 1.0 px 中位**（120 点持出，最大 4.5）；**圆角 6.25 px 中位 / p90 39**（30 点持出）—— 圆角的瓶颈是曲线饱和，见 §3.4 |
 | 源码 | `VERSION 0.9.78 / BUILD 133`，**工作区干净**（HEAD 以 `git log -1` 为准）。**git 推不上去**，远端只同步 `README/CHANGELOG/HANDOVER/PITFALLS` + `docs*/`（走 `gh api`），代码本身没推 |
 | 录制 | **0.9.79 起已发布**：环形录制 + 按窗口导出 + 节目音（3 s 判定窗）+ 麦克风第二轨 = **三轨导出**，正式包里验过（见 §5、[docs/recording-design.md](docs/recording-design.md)） |
-| 备份 | `backups/repo-v0.9.81.bundle`（43 MB，HEAD `6bfed47`，收工快照），锚点见 `backups/RESTORE.md` |
+| 备份 | `backups/repo-v0.9.81.bundle`（43 MB，2026-10-31 收工快照，含到 `b164d91` 的历史；之后的提交只有文档），锚点见 `backups/RESTORE.md` |
 
 ## 1. 开工 30 秒
 
